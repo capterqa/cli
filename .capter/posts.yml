@@ -1,0 +1,64 @@
+name: posts
+env:
+  POST_ID: 0
+  AUTHOR_ID: 20
+  DURATION: 20
+steps:
+  - name: fetch all posts
+    id: posts
+    url: https://dummy-api.capter.io/api/posts
+    method: GET
+    assertions:
+      - !assert status equal 200
+      - !assert headers content-type contains application/json
+      - !assert duration isBelow 1000
+      - !assert duration isAbove ${{ env.DURATION }}
+      - !assert body isArray
+      - !assert body hasLength 50
+      - !assert body 0.id equal ${{ mask env.POST_ID }}
+      - !assert body 0.title isNotEmpty
+      - !assert body 0.title notEqual this is not the title
+    options:
+      mask:
+        - title
+        - date
+
+  - name: fetch one post
+    id: post
+    url: https://dummy-api.capter.io/api/posts/1
+    method: GET
+    assertions:
+      - !assert status equal 200
+      - !assert body content match dicta dolor ut qui
+      - !assert body id notMatch 5
+
+  - name: fetch all posts from author
+    url: https://dummy-api.capter.io/api/posts
+    method: GET
+    query:
+      authorId: ${{ post.response.body.authorId }}
+    body:
+      id: ${{ mask post.response.body.title }}
+      nested:
+        what:
+          - ${{ post.response.body.authorId }}
+          - ${{ mask post.response.body.authorId }}
+    assertions:
+      - !assert status equal 200
+      - !assert body 0.authorId equal ${{ mask post.response.body.id }}
+
+  - name: fetch posts by user with id 20
+    url: https://dummy-api.capter.io/api/posts
+    method: GET
+    query:
+      authorId: 20
+    assertions:
+      - !assert status equal 200
+      - !assert body 0.authorId isUndefined
+
+  - name: fetch author with id from env vars
+    url: https://dummy-api.capter.io/api/authors/${{ env.AUTHOR_ID }}
+    method: GET
+    assertions:
+      - !assert status equal 200
+      - !assert body id equal ${{ env.AUTHOR_ID }}

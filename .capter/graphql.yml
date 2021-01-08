@@ -1,0 +1,35 @@
+name: graphql-inline
+url: https://dummy-api.capter.io/api/graphql
+steps:
+  - name: fetch all posts
+    id: posts
+    graphql:
+      query: |
+        query posts {
+          posts {
+            id
+            title
+            content
+          }
+        }
+    assertions:
+      - !assert status equal 200
+      - !assert headers content-type contains application/json
+      - !assert body data.posts isArray
+
+  - name: fetch one post
+    id: post
+    graphql:
+      query: |
+        query post($id: Int!) {
+          post(id: $id) {
+            id
+            title
+            content
+          }
+        }
+      variables:
+        id: ${{ posts.response.body.data.posts.1.id }}
+    assertions:
+      - !assert status equal 200
+      - !assert body data.post.id equal 1
