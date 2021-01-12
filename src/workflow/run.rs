@@ -1,19 +1,28 @@
 use crate::{
-    assert::assert_on_response,
+    assert::{assert_on_response, AssertionResultData},
     workflow::{
-        create_body, create_headers, create_query, create_url, make_request, mask, RequestData,
-        WorkflowConfig,
+        create_body, create_headers, create_method, create_query, create_url, make_request, mask,
+        RequestData, WorkflowConfig,
     },
 };
 use chrono::Utc;
 use serde_json::json;
 use std::env;
 
-use super::create_method;
+pub enum CallbackEvent<'a> {
+    RunStart(&'a WorkflowConfig),
+    RunDone(&'a WorkflowConfig, bool),
+    StepStart(&'a WorkflowConfig, i32),
+    StepDone(&'a WorkflowConfig, i32, &'a Vec<AssertionResultData>, bool),
+    StepSkipped(&'a WorkflowConfig, i32),
+}
+// type Callback = &dyn fn(event: CallbackEvent);
 
 pub async fn run_workflow(
-    config: WorkflowConfig,
+    config: &WorkflowConfig,
+    mut callback: impl FnMut(CallbackEvent),
 ) -> Result<Vec<RequestData>, Box<dyn std::error::Error>> {
+    callback(CallbackEvent::RunStart(config));
     let mut workflow_data = json!({});
 
     // add env to workflow data
@@ -33,7 +42,16 @@ pub async fn run_workflow(
     // keeps track of what step we are processing
     let mut step_index = 0;
 
+    let mut workflow_passed = true;
+
     for step in config.steps.iter() {
+        callback(CallbackEvent::StepStart(config, step_index));
+
+        if step.skip.is_some() {
+            callback(CallbackEvent::StepSkipped(config, step_index));
+            continue;
+        }
+
         let url = create_url(step, &config, &workflow_data);
         let body = create_body(&step, &workflow_data);
         let query = create_query(step, &workflow_data);
@@ -64,6 +82,17 @@ pub async fn run_workflow(
         let assertion_result_data =
             assert_on_response(&response_data, &step.assertions, &workflow_data).await;
 
+        // check if step passed
+        let step_passed = !assertion_result_data.iter().any(|r| r.passed == false);
+
+        callback(CallbackEvent::StepDone(
+            config,
+            step_index,
+            &assertion_result_data,
+            step_passed,
+        ));
+
+        // move results to response_data
         response_data.assertion_results = Some(assertion_result_data);
 
         // add to workflow_data if the step has an id
@@ -74,8 +103,11 @@ pub async fn run_workflow(
         // attach response to request
         request_data.response = Some(response_data);
 
+        // clone the response data
+        // this will be the one we return to be used in the ui
         let mut masked_response_data = request_data.response.unwrap().clone();
 
+        // mask response if the user has added masked properties
         if let Some(options) = &step.options {
             masked_response_data = mask(masked_response_data, &options);
         }
@@ -98,8 +130,15 @@ pub async fn run_workflow(
 
         requests.push(masked_request_data);
 
+        // is one step fails, the whole worklfow is set to fail too
+        if workflow_passed == true && step_passed == false {
+            workflow_passed = false;
+        }
+
         step_index += 1;
     }
+
+    callback(CallbackEvent::RunDone(config, workflow_passed));
 
     Ok(requests)
 }

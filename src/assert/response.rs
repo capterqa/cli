@@ -9,13 +9,13 @@ use serde_json::Value;
 #[derive(Debug, Serialize, Clone)]
 pub struct AssertionResultData {
     pub passed: bool,
-    pub message: Option<&'static str>,
+    pub message: Option<String>,
     pub assertion: Assertion,
 }
 
 #[derive(Debug, Serialize)]
 pub struct AssertionData {
-    pub status: u16,
+    pub status: Option<u16>,
     pub body: serde_json::Value,
     pub headers: serde_json::Value,
     pub duration: i64,
@@ -42,11 +42,12 @@ pub async fn assert_on_response(
         let assertion_raw = parse_assertion_string(&assertion_string.raw);
         let assertion_masked = parse_assertion_string(&assertion_string.masked);
 
-        let passed = assert(&assertion_raw, &assertion_data);
+        let result = assert(&assertion_raw, &assertion_data);
+        let passed = result.is_none();
 
         let assertion_result_data = AssertionResultData {
             assertion: assertion_masked,
-            message: None,
+            message: result,
             passed,
         };
 

@@ -1,5 +1,6 @@
 mod assert;
 mod compile;
+mod ui;
 mod workflow;
 
 use chrono::{DateTime, Utc};
@@ -9,6 +10,7 @@ use serde::Serialize;
 use serde_json::json;
 use std::fs;
 use std::time::Instant;
+use ui::TerminalUi;
 use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig};
 
 #[derive(Debug, Serialize)]
@@ -25,29 +27,39 @@ async fn main() {
     let mut workflow_runs: Vec<WorkflowRun> = vec![];
     let source = get_source();
 
-    for entry in glob(".capter/**/*.yml").expect("Failed to read glob pattern") {
-        let path = entry.expect("Failed to read path");
-        println!("{}", path.display());
+    let entries = glob(".capter/**/*.yml").expect("Failed to read glob pattern");
+    let configs: Vec<WorkflowConfig> = entries
+        .map(|entry| {
+            let path = entry.unwrap();
+            let path = format!("{}", path.display());
+            let content = fs::read_to_string(path.clone()).unwrap();
+            let workflow = parse_yaml(content, path).expect("Failed to parse config.");
+            workflow
+        })
+        .collect();
 
-        let content = fs::read_to_string(path).unwrap();
+    let mut terminal_ui = TerminalUi::new(&configs, false);
 
-        let workflow = parse_yaml(content).expect("Failed to parse config.");
-
-        if workflow.skip.is_some() {
-            println!("skipping {}", workflow.name);
+    for workflow_config in configs {
+        if workflow_config.skip.is_some() {
+            terminal_ui.skipped_workflow(&workflow_config);
             continue;
         }
 
         // track time
         let timer = Instant::now();
 
-        let requests = run_workflow(workflow.clone()).await.unwrap();
+        let requests = run_workflow(&workflow_config, |event| {
+            terminal_ui.update(event);
+        })
+        .await
+        .unwrap();
 
         // save time
         let run_time = timer.elapsed().as_millis() as i64;
 
         let workflow_run = WorkflowRun {
-            workflow,
+            workflow: workflow_config,
             created_at: Utc::now(),
             requests,
             run_time,
@@ -56,6 +68,8 @@ async fn main() {
 
         workflow_runs.push(workflow_run);
     }
+
+    terminal_ui.summarize(&workflow_runs);
 
     let client = reqwest::Client::new();
     let _request = client
@@ -67,6 +81,4 @@ async fn main() {
         }))
         .send()
         .await;
-
-    println!("done");
 }

@@ -4,7 +4,7 @@ pub mod parse;
 pub mod response;
 pub mod types;
 
-pub use assert::{assert, Assertion, AssertionType};
+pub use assert::{assert, Assertion};
 pub use assertions::ValueAssertions;
 pub use parse::parse_assertion_string;
 pub use response::{assert_on_response, AssertionData, AssertionResultData};

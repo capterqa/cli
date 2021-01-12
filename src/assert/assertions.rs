@@ -4,7 +4,7 @@ use serde_json::Value;
 pub struct ValueAssertions {}
 
 impl ValueAssertions {
-    pub fn get(name: &str) -> fn(&Value, &Value) -> bool {
+    pub fn get(name: &str) -> fn(&Value, &Value) -> Option<String> {
         match name {
             "equal" => assert_equal,
             "contains" => assert_contains,
@@ -22,81 +22,144 @@ impl ValueAssertions {
     }
 }
 
-fn assert_equal(a: &Value, b: &Value) -> bool {
-    value_to_string(a).eq(&value_to_string(b))
+fn assert_equal(a: &Value, b: &Value) -> Option<String> {
+    if value_to_string(a).eq(&value_to_string(b)) {
+        return None;
+    }
+
+    Some(format!(
+        "expected {} to equal {}",
+        value_to_string(a),
+        value_to_string(b)
+    ))
 }
 
-fn assert_contains(a: &Value, b: &Value) -> bool {
+fn assert_contains(a: &Value, b: &Value) -> Option<String> {
     let a_string = value_to_string(a);
     let b_string = value_to_string(b);
 
-    a_string.contains(&b_string)
-}
-
-fn assert_is_below(a: &Value, b: &Value) -> bool {
-    if let Some(a_number) = value_to_number(a) {
-        if let Some(b_number) = value_to_number(b) {
-            return a_number < b_number;
-        }
-    };
-    false
-}
-
-fn assert_is_above(a: &Value, b: &Value) -> bool {
-    if let Some(a_number) = value_to_number(a) {
-        if let Some(b_number) = value_to_number(b) {
-            return a_number > b_number;
-        }
-    };
-    false
-}
-
-fn assert_is_array(a: &Value, _b: &Value) -> bool {
-    a.is_array()
-}
-
-fn assert_has_length(a: &Value, b: &Value) -> bool {
-    if !a.is_array() {
-        return false;
+    if a_string.contains(&b_string) {
+        return None;
     }
-    if let Some(number) = value_to_number(b) {
-        return a.as_array().unwrap().len() as u32 == number;
-    };
-    false
+
+    Some(format!("expected {} to contain {}", a, b))
 }
 
-fn assert_is_not_empty(a: &Value, _b: &Value) -> bool {
+fn assert_is_below(a: &Value, b: &Value) -> Option<String> {
+    if let (Some(a_number), Some(b_number)) = (value_to_number(a), value_to_number(b)) {
+        if a_number < b_number {
+            return None;
+        }
+    }
+
+    Some(format!("expected {} to be below {}", a, b))
+}
+
+fn assert_is_above(a: &Value, b: &Value) -> Option<String> {
+    if let (Some(a_number), Some(b_number)) = (value_to_number(a), value_to_number(b)) {
+        if a_number > b_number {
+            return None;
+        }
+    }
+
+    Some(format!("expected {} to be above {}", a, b))
+}
+
+fn assert_is_array(a: &Value, _b: &Value) -> Option<String> {
     if a.is_array() {
-        return a.as_array().unwrap().len() > 0;
+        return None;
+    }
+
+    Some(format!(
+        "expected {} to be an array but got {}",
+        a,
+        value_type(a)
+    ))
+}
+
+fn assert_has_length(a: &Value, b: &Value) -> Option<String> {
+    // try array
+    if let (Some(number), Some(array)) = (value_to_number(b), a.as_array()) {
+        if array.len() as u32 == number {
+            return None;
+        }
+        return Some(format!(
+            "expected array to have length {} but got {}",
+            number,
+            array.len(),
+        ));
+    };
+
+    // try string
+    if let (Some(number), Some(string)) = (value_to_number(b), a.as_str()) {
+        if string.len() as u32 == number {
+            return None;
+        }
+        return Some(format!(
+            "expected string to have length {} but got {}",
+            number,
+            string.len(),
+        ));
+    };
+
+    Some(format!(
+        "expected string or array but got {}",
+        value_type(a)
+    ))
+}
+
+fn assert_is_not_empty(a: &Value, _b: &Value) -> Option<String> {
+    if a.is_array() {
+        if a.as_array().unwrap().len() > 0 {
+            return Some(format!("expected array to not be empty"));
+        }
     }
     if a.is_null() {
-        return false;
+        return Some(format!("expected null to not be empty"));
     }
-    true
+
+    None
 }
 
-fn assert_not_equal(a: &Value, b: &Value) -> bool {
-    value_to_string(a).ne(&value_to_string(b))
+fn assert_not_equal(a: &Value, b: &Value) -> Option<String> {
+    if value_to_string(a).ne(&value_to_string(b)) {
+        return None;
+    }
+
+    Some(format!("expected {} to not equal {}", a, b))
 }
 
-fn assert_match(a: &Value, b: &Value) -> bool {
+fn assert_match(a: &Value, b: &Value) -> Option<String> {
     let a_string = &value_to_string(a);
     let b_string = &value_to_string(b);
     let search = Regex::new(b_string).unwrap();
     let did_match = search.captures_iter(a_string);
-    did_match.count() > 0
+
+    if did_match.count() > 0 {
+        return None;
+    }
+
+    Some(format!("expected {} to match {}", a, b))
 }
 
-fn assert_not_match(a: &Value, b: &Value) -> bool {
+fn assert_not_match(a: &Value, b: &Value) -> Option<String> {
     let a_string = &value_to_string(a);
     let b_string = &value_to_string(b);
     let search = Regex::new(b_string).unwrap();
     let did_match = search.captures_iter(a_string);
-    did_match.count() == 0
+    if did_match.count() == 0 {
+        return None;
+    }
+
+    Some(format!("expected {} to not match {}", a, b))
 }
 
-fn assert_is_undefined(a: &Value, _b: &Value) -> bool {
-    a.is_null()
+fn assert_is_undefined(a: &Value, _b: &Value) -> Option<String> {
+    if a.is_null() {
+        return None;
+    }
+
+    Some(format!("expected {} to be null", a))
 }
 
 fn value_to_number(v: &Value) -> Option<u32> {
@@ -113,9 +176,33 @@ fn value_to_string(v: &Value) -> String {
     if v.is_string() {
         return v.as_str().unwrap().to_string();
     }
+
     // try to convert to string
     if let Some(v) = v.as_str() {
         return v.to_string();
     };
+
     format!("{}", v)
+}
+
+fn value_type(v: &Value) -> String {
+    if v.is_string() {
+        return "string".to_string();
+    }
+    if v.is_array() {
+        return "array".to_string();
+    }
+    if v.is_boolean() {
+        return "boolean".to_string();
+    }
+    if v.is_number() {
+        return "number".to_string();
+    }
+    if v.is_null() {
+        return "null".to_string();
+    }
+    if v.is_object() {
+        return "object".to_string();
+    }
+    return "unknown".to_string();
 }

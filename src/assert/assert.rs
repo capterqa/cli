@@ -2,24 +2,14 @@ use crate::assert::{AssertionData, ValueAssertions};
 use serde::Serialize;
 use serde_json::{json, Value};
 
-#[derive(Debug, Clone, Serialize)]
-#[allow(non_camel_case_types)]
-pub enum AssertionType {
-    body,
-    status,
-    duration,
-    headers,
-}
-
 #[derive(Debug, Serialize, Clone)]
 pub struct Assertion {
-    pub assertion_type: AssertionType,
     pub test: String,
     pub property: String,
     pub value: serde_json::Value,
 }
 
-pub fn assert(assertion: &Assertion, assertion_data: &AssertionData) -> bool {
+pub fn assert(assertion: &Assertion, assertion_data: &AssertionData) -> Option<String> {
     let assertion_data_json = json!(&assertion_data);
 
     // create pointer

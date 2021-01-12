@@ -64,3 +64,84 @@ fn deep_keys(
         _ => value.clone(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indoc::indoc;
+    use serde_json::json;
+    use serde_yaml::{from_str, Value};
+
+    #[test]
+    fn test_plain() {
+        let yaml = indoc! {"
+            ---
+            name: ${{ user.name }}
+        "};
+        let test_value: Value = from_str(yaml).unwrap();
+        let data = json!({ "user": { "name":  "Test McTest" }});
+        let output = compile_value(Some(test_value), &data);
+
+        assert_eq!(output.raw["name"], "Test McTest");
+        assert_eq!(output.masked["name"], "Test McTest");
+    }
+
+    #[test]
+    fn test_masking() {
+        let yaml = indoc! {"
+            ---
+            name: ${{ mask user.name }}
+        "};
+        let test_value: Value = from_str(yaml).unwrap();
+        let data = json!({ "user": { "name":  "Test McTest" }});
+        let output = compile_value(Some(test_value), &data);
+
+        assert_eq!(output.raw["name"], "Test McTest");
+        assert_eq!(output.masked["name"], "****");
+    }
+
+    #[test]
+    fn test_complex_structures() {
+        let yaml = indoc! {"
+            ---
+            array: 
+              - ${{ mask user.name }}
+              - Age ${{ user.age }}
+              - static text
+            user:
+              name: ${{ mask user.name }}
+              age: ${{ mask user.age }}
+        "};
+        let test_value: Value = from_str(yaml).unwrap();
+        let data = json!({ "user": { "name":  "Test McTest", "age": 30 }});
+        let output = compile_value(Some(test_value), &data);
+
+        assert_eq!(output.raw["array"][0], "Test McTest");
+        assert_eq!(output.masked["array"][0], "****");
+        assert_eq!(output.raw["array"][1], "Age 30");
+        assert_eq!(output.masked["array"][1], "Age 30");
+        assert_eq!(output.raw["user"]["name"], "Test McTest");
+        assert_eq!(output.masked["user"]["name"], "****");
+        assert_eq!(output.raw["user"]["age"], 30);
+        assert_eq!(output.masked["user"]["age"], "****");
+    }
+
+    #[test]
+    fn test_value_types() {
+        let yaml = indoc! {"
+            ---
+            string: ${{ string }}
+            int: ${{ int }}
+            float: ${{ float }}
+            boolean: ${{ boolean }}
+        "};
+        let test_value: Value = from_str(yaml).unwrap();
+        let data = json!({ "string": "test_string", "int": 5, "float": 1.5, "boolean": true });
+        let output = compile_value(Some(test_value), &data);
+
+        assert_eq!(output.raw["string"], "test_string");
+        assert_eq!(output.raw["int"], 5);
+        assert_eq!(output.raw["float"], 1.5);
+        assert_eq!(output.raw["boolean"], true);
+    }
+}

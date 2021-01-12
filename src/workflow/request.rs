@@ -22,8 +22,8 @@ pub struct RequestData {
 #[derive(Debug, Serialize, Clone)]
 pub struct ResponseData {
     pub created_at: DateTime<Utc>,
-    pub status: u16,
-    pub status_text: Option<&'static str>,
+    pub status: Option<u16>,
+    pub status_text: String,
     pub headers: serde_json::Value,
     pub body: Option<serde_json::Value>,
     pub response_time: i64,
@@ -66,31 +66,48 @@ pub async fn make_request(
     // track time
     let timer = Instant::now();
 
-    let response = client.execute(request).await?;
+    let response = client.execute(request).await;
 
     // save time
     let response_time = timer.elapsed().as_millis() as i64;
 
     // loop through assertions and assert against the response
-    let status = response.status().as_u16();
-    let status_text = response.status().canonical_reason().unwrap_or("");
-    let headers = response.headers().clone();
-    let body = response.json::<Value>().await.unwrap_or(json!(status_text));
+    let response_data = match response {
+        Ok(response) => {
+            let status = response.status().as_u16();
+            let status_text = response
+                .status()
+                .canonical_reason()
+                .unwrap_or("")
+                .to_owned();
+            let headers = response.headers().clone();
+            let body = response.json::<Value>().await.unwrap_or(json!(status_text));
 
-    // move headers to a value
-    let mut headers_json = serde_json::Map::new();
-    for (key, value) in headers.iter() {
-        headers_json.insert(key.to_string(), json!(value.to_str().unwrap()));
-    }
+            // move headers to a value
+            let mut headers_json = serde_json::Map::new();
+            for (key, value) in headers.iter() {
+                headers_json.insert(key.to_string(), json!(value.to_str().unwrap()));
+            }
 
-    let response_data = ResponseData {
-        created_at: Utc::now(),
-        response_time,
-        status,
-        status_text: Some(status_text),
-        headers: headers_json.into(),
-        body: Some(body),
-        assertion_results: None,
+            ResponseData {
+                created_at: Utc::now(),
+                response_time,
+                status: Some(status),
+                status_text,
+                body: Some(body),
+                headers: headers_json.into(),
+                assertion_results: None,
+            }
+        }
+        Err(error) => ResponseData {
+            created_at: Utc::now(),
+            response_time,
+            status: None,
+            status_text: error.to_string(),
+            body: None,
+            headers: Value::Null,
+            assertion_results: None,
+        },
     };
 
     Ok(response_data)

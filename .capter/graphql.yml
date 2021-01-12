@@ -14,8 +14,8 @@ steps:
         }
     assertions:
       - !assert status equal 200
-      - !assert headers content-type contains application/json
-      - !assert body data.posts isArray
+      - !assert headers.content-type contains application/json
+      - !assert body.data.posts isArray
 
   - name: fetch one post
     id: post
@@ -32,4 +32,4 @@ steps:
         id: ${{ posts.response.body.data.posts.1.id }}
     assertions:
       - !assert status equal 200
-      - !assert body data.post.id equal 1
+      - !assert body.data.post.id equal 1
