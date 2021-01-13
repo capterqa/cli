@@ -1,0 +1,31 @@
+name: capter
+author: capter.io <capter.io>
+about: Test your APIs.
+subcommands:
+  - test:
+      about: run tests
+      args:
+        - debug:
+            short: d
+            help: print debug information
+        - token:
+            short: t
+            long: token
+            value_name: TOKEN
+            help: pass a token with the webhook request
+            takes_value: true
+        - webhook:
+            short: w
+            long: webhook
+            help: post the run to a url after completion
+            value_name: URL
+            takes_value: true
+            default_value: 'http://localhost:3002/api/webhooks/runs'
+        - dry-run:
+            long: dry-run
+            help: skip posting the run to the webhook
+
+        - INPUT:
+            help: Glob pattern where to look for tests
+            required: false
+            default_value: '{.capter,capter}/**/*.yml'

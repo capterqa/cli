@@ -4,7 +4,9 @@ mod ui;
 mod workflow;
 
 use chrono::{DateTime, Utc};
-use glob::glob;
+use clap::{crate_version, App, AppSettings};
+use globwalk;
+use path_clean::PathClean;
 use reqwest::Method;
 use serde::Serialize;
 use serde_json::json;
@@ -12,6 +14,9 @@ use std::fs;
 use std::time::Instant;
 use ui::TerminalUi;
 use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig};
+
+#[macro_use]
+extern crate clap;
 
 #[derive(Debug, Serialize)]
 pub struct WorkflowRun {
@@ -24,61 +29,92 @@ pub struct WorkflowRun {
 
 #[tokio::main]
 async fn main() {
-    let mut workflow_runs: Vec<WorkflowRun> = vec![];
-    let source = get_source();
+    let yml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yml)
+        .setting(AppSettings::SubcommandRequiredElseHelp)
+        .version(crate_version!())
+        .get_matches();
 
-    let entries = glob(".capter/**/*.yml").expect("Failed to read glob pattern");
-    let configs: Vec<WorkflowConfig> = entries
-        .map(|entry| {
-            let path = entry.unwrap();
-            let path = format!("{}", path.display());
-            let content = fs::read_to_string(path.clone()).unwrap();
-            let workflow = parse_yaml(content, path).expect("Failed to parse config.");
-            workflow
-        })
-        .collect();
+    if let Some(matches) = matches.subcommand_matches("test") {
+        let token = matches.value_of("token");
+        let webhook = matches.value_of("webhook");
+        let glob_pattern = matches.value_of("INPUT").unwrap();
+        let dry_run = matches.is_present("dry-run");
 
-    let mut terminal_ui = TerminalUi::new(&configs, false);
+        let mut workflow_runs: Vec<WorkflowRun> = vec![];
+        let source = get_source();
 
-    for workflow_config in configs {
-        if workflow_config.skip.is_some() {
-            terminal_ui.skipped_workflow(&workflow_config);
-            continue;
+        let entries = globwalk::glob(glob_pattern).expect("Failed to read glob pattern");
+        let configs: Vec<WorkflowConfig> = entries
+            .map(|entry| {
+                let path = entry.unwrap().into_path().clean();
+                let path = format!("{}", path.display());
+                let content = fs::read_to_string(path.clone()).unwrap();
+                let workflow = parse_yaml(content, path).expect("Failed to parse config.");
+                workflow
+            })
+            .collect();
+
+        let mut terminal_ui = TerminalUi::new(&configs, false);
+
+        for workflow_config in configs {
+            if workflow_config.skip.is_some() {
+                terminal_ui.skipped_workflow(&workflow_config);
+                continue;
+            }
+
+            // track time
+            let timer = Instant::now();
+
+            let requests = run_workflow(&workflow_config, |event| {
+                terminal_ui.update(event);
+            })
+            .await
+            .unwrap();
+
+            // save time
+            let run_time = timer.elapsed().as_millis() as i64;
+
+            let workflow_run = WorkflowRun {
+                workflow: workflow_config,
+                created_at: Utc::now(),
+                requests,
+                run_time,
+                passed: true,
+            };
+
+            workflow_runs.push(workflow_run);
         }
 
-        // track time
-        let timer = Instant::now();
+        terminal_ui.summarize(&workflow_runs);
 
-        let requests = run_workflow(&workflow_config, |event| {
-            terminal_ui.update(event);
-        })
-        .await
-        .unwrap();
+        // post to webhook
+        if let Some(webhook) = webhook {
+            if dry_run {
+                terminal_ui.dry_run();
+                return;
+            }
 
-        // save time
-        let run_time = timer.elapsed().as_millis() as i64;
+            terminal_ui.webhook_start(webhook);
 
-        let workflow_run = WorkflowRun {
-            workflow: workflow_config,
-            created_at: Utc::now(),
-            requests,
-            run_time,
-            passed: true,
-        };
+            let client = reqwest::Client::new();
+            let mut request = client.request(Method::POST, webhook);
 
-        workflow_runs.push(workflow_run);
+            // add token if set
+            if let Some(token) = token {
+                request = request.query(&[("token", token)]);
+            }
+
+            request
+                .json(&json!({
+                    "source": json!(source),
+                    "data": json!(workflow_runs)
+                }))
+                .send()
+                .await
+                .unwrap();
+
+            terminal_ui.webhook_done();
+        }
     }
-
-    terminal_ui.summarize(&workflow_runs);
-
-    let client = reqwest::Client::new();
-    let _request = client
-        .request(Method::POST, "http://localhost:3002/api/webhooks/runs")
-        .query(&[("token", "111bd686-f54b-4268-b3f7-0d7f31cc9394")])
-        .json(&json!({
-            "source": json!(source),
-            "data": json!(workflow_runs)
-        }))
-        .send()
-        .await;
 }
