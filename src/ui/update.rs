@@ -42,12 +42,8 @@ impl TerminalUi {
                 let step = config.steps[index as usize].clone();
 
                 if self.is_tty {
-                    execute!(
-                        stdout(),
-                        cursor::RestorePosition,
-                        terminal::Clear(ClearType::FromCursorDown)
-                    )
-                    .unwrap();
+                    execute!(stdout(), cursor::MoveToPreviousLine(5)).unwrap();
+                    execute!(stdout(), terminal::Clear(ClearType::FromCursorDown)).unwrap();
                 }
 
                 &self.print_step(config, &step, StepStatus::Done(passed));
@@ -75,7 +71,7 @@ impl TerminalUi {
                 if self.is_tty {
                     execute!(
                         stdout(),
-                        cursor::RestorePosition,
+                        cursor::MoveToPreviousLine(5),
                         terminal::Clear(ClearType::FromCursorDown)
                     )
                     .unwrap();
