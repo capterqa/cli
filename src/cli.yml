@@ -24,7 +24,6 @@ subcommands:
         - dry-run:
             long: dry-run
             help: skip posting the run to the webhook
-
         - INPUT:
             help: Glob pattern where to look for tests
             required: false
