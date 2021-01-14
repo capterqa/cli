@@ -21,7 +21,7 @@ pub struct AssertionData {
     pub duration: i64,
 }
 
-pub async fn assert_on_response(
+pub fn assert_on_response(
     response: &ResponseData,
     assertions: &Vec<WorkflowConfigAssertion>,
     workflow_data: &Value,

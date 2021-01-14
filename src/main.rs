@@ -7,12 +7,12 @@ use chrono::{DateTime, Utc};
 use clap::{crate_version, App, AppSettings};
 use globwalk;
 use path_clean::PathClean;
-use reqwest::Method;
 use serde::Serialize;
 use serde_json::json;
 use std::fs;
 use std::time::Instant;
 use ui::TerminalUi;
+use ureq;
 use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig};
 
 #[macro_use]
@@ -27,8 +27,7 @@ pub struct WorkflowRun {
     pub requests: Vec<RequestData>,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let yml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yml)
         .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -36,6 +35,7 @@ async fn main() {
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("test") {
+        let is_debug = matches.is_present("debug");
         let token = matches.value_of("token");
         let webhook = matches.value_of("webhook");
         let glob_pattern = matches.value_of("INPUT").unwrap();
@@ -55,7 +55,7 @@ async fn main() {
             })
             .collect();
 
-        let mut terminal_ui = TerminalUi::new(&configs, false);
+        let mut terminal_ui = TerminalUi::new(&configs, is_debug);
 
         for workflow_config in configs {
             if workflow_config.skip.is_some() {
@@ -69,7 +69,6 @@ async fn main() {
             let requests = run_workflow(&workflow_config, |event| {
                 terminal_ui.update(event);
             })
-            .await
             .unwrap();
 
             // save time
@@ -97,24 +96,26 @@ async fn main() {
 
             terminal_ui.webhook_start(webhook);
 
-            let client = reqwest::Client::new();
-            let mut request = client.request(Method::POST, webhook);
+            let mut request = ureq::request("post", webhook);
 
             // add token if set
             if let Some(token) = token {
-                request = request.query(&[("token", token)]);
+                request = request.query("token", token);
             }
 
-            request
-                .json(&json!({
-                    "source": json!(source),
-                    "data": json!(workflow_runs)
-                }))
-                .send()
-                .await
-                .unwrap();
+            let response = request.send_json(json!({
+                "source": json!(source),
+                "data": json!(workflow_runs)
+            }));
 
-            terminal_ui.webhook_done();
+            match response {
+                Ok(_) => {
+                    terminal_ui.webhook_done();
+                }
+                Err(err) => {
+                    println!("{}", err.to_string());
+                }
+            }
         }
     }
 }
