@@ -30,7 +30,6 @@ fn deep_keys(
 ) -> serde_yaml::Value {
     match value {
         Value::String(val) => {
-            // use handlebars to compile value
             let result = compile_string(val, data);
 
             let val = match masked {
