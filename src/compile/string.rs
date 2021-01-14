@@ -38,7 +38,7 @@ pub fn compile_string(value: &str, data: &Value) -> CompiledString {
                     let pointer = format!("/{}", parts[1].replace(".", "/"));
                     (pointer, true)
                 } else {
-                    panic!("invalid template [{}]", original_value);
+                    panic!("invalid template `{}`", original_value);
                 }
             }
         };
@@ -120,5 +120,54 @@ mod tests {
         let output = compile_string(test_string, &data);
         assert_eq!(output.raw, "test_string");
         assert_eq!(output.masked, "****");
+    }
+
+    #[test]
+    fn test_empty_tag() {
+        let data = json!({
+            "test": "test_string"
+        });
+        let test_string = "${{ }}";
+        let output = compile_string(test_string, &data);
+
+        assert_eq!(output.raw, "");
+        assert_eq!(output.masked, "");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_format() {
+        let data = json!({
+            "test": "test_string"
+        });
+        let test_string = "${{ mask path invalid }}";
+        compile_string(test_string, &data);
+    }
+
+    #[test]
+    fn test_missing_value() {
+        let data = json!({
+            "test": "test_string"
+        });
+        let test_string = "Path [${{ invalid.path }}] is invalid";
+        let output = compile_string(test_string, &data);
+
+        assert_eq!(output.raw, "Path [] is invalid");
+        assert_eq!(output.masked, "Path [] is invalid");
+    }
+
+    #[test]
+    fn test_nested_value() {
+        let data = json!({
+            "nested": {
+                "a": "b",
+                "c": ["d", "e"]
+            }
+        });
+        let test_string = "nested: ${{ mask nested }}";
+        let output = compile_string(test_string, &data);
+
+        assert_eq!(output.raw, "nested: {\"a\":\"b\",\"c\":[\"d\",\"e\"]}");
+        assert_eq!(output.masked, "nested: ****");
     }
 }
