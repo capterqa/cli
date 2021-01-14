@@ -1,8 +1,20 @@
 [package]
-name = "capter-cli"
+name = "capter"
 version = "0.1.0"
-authors = ["Filip Stefansson <filip.stefansson@gmail.com>"]
+authors = ["capter.io <filip@capter.io>"]
+license = "MIT"
+description = "Test your APIs with the CapterQA CLI."
+readme = "README.md"
+homepage = "https://capter.io"
+repository = "https://github.com/capterqa/cli"
+keywords = ["cli", "qa", "api"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = [".releaserc", ".capter", ".github"]
 edition = "2018"
+
+[[bin]]
+name = "capter"
+path = "src/main.rs"
 
 [dependencies]
 regex = "1"
