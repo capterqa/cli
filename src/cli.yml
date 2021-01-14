@@ -7,7 +7,7 @@ subcommands:
       args:
         - debug:
             short: d
-            help: print debug information
+            long: debug
         - token:
             short: t
             long: token

@@ -16,9 +16,8 @@ pub enum CallbackEvent<'a> {
     StepDone(&'a WorkflowConfig, i32, &'a Vec<AssertionResultData>, bool),
     StepSkipped(&'a WorkflowConfig, i32),
 }
-// type Callback = &dyn fn(event: CallbackEvent);
 
-pub async fn run_workflow(
+pub fn run_workflow(
     config: &WorkflowConfig,
     mut callback: impl FnMut(CallbackEvent),
 ) -> Result<Vec<RequestData>, Box<dyn std::error::Error>> {
@@ -76,11 +75,11 @@ pub async fn run_workflow(
         }
 
         // do the request
-        let mut response_data = make_request(&request_data).await?;
+        let mut response_data = make_request(&request_data);
 
         // assert on response
         let assertion_result_data =
-            assert_on_response(&response_data, &step.assertions, &workflow_data).await;
+            assert_on_response(&response_data, &step.assertions, &workflow_data);
 
         // check if step passed
         let step_passed = !assertion_result_data.iter().any(|r| r.passed == false);
