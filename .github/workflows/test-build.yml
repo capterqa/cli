@@ -1,6 +1,12 @@
-on: [push]
-
 name: test-build
+
+# runs on push but ignores tags (release)
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
 
 jobs:
   build-test:
@@ -48,12 +54,34 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: semantic-release
-        uses: cycjimmy/semantic-release-action@v2.5.3
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           extra_plugins: |
             @semantic-release/commit-analyzer
             @semantic-release/release-notes-generator
             @semantic-release/github
             @semantic-release/git
+
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-semver
+          version: 1.0.0-alpha.3
+          use-tool-cache: true
+
+      - name: bump version number in Cargo.toml
+        uses: actions-rs/cargo@v1
+        if: steps.semantic.outputs.new_release_published == 'true'
+        with:
+          command: semver
+          args: set ${{ steps.semantic.outputs.new_release_version }}
+
+      - name: commit new version
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: v${{ steps.semantic.outputs.new_release_version }}
+          commit_user_name: GitHub Action
+          commit_user_email: github-action@users.noreply.github.com
+          commit_author: GitHub Action <github-action@users.noreply.github.com>
