@@ -1,6 +1,12 @@
-on: [push]
-
 name: test-build
+
+# runs on push but ignores tags (release)
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
 
 jobs:
   build-test:
@@ -48,7 +54,8 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: semantic-release
-        uses: cycjimmy/semantic-release-action@v2.5.3
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -57,3 +64,10 @@ jobs:
             @semantic-release/release-notes-generator
             @semantic-release/github
             @semantic-release/git
+
+      - name: bump version number in Cargo.toml
+        uses: actions-rs/cargo@v1
+        if: steps.semantic.outputs.new_release_published == 'true'
+        with:
+          command: run
+          args: test --token ${{ secrets.CAPTER_TOKEN }} --dry-run
