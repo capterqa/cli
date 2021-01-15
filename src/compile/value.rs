@@ -30,7 +30,6 @@ fn deep_keys(
 ) -> serde_yaml::Value {
     match value {
         Value::String(val) => {
-            // use handlebars to compile value
             let result = compile_string(val, data);
 
             let val = match masked {
@@ -120,6 +119,7 @@ mod tests {
         assert_eq!(output.masked["array"][0], "****");
         assert_eq!(output.raw["array"][1], "Age 30");
         assert_eq!(output.masked["array"][1], "Age 30");
+        assert_eq!(output.masked["array"][2], "static text");
         assert_eq!(output.raw["user"]["name"], "Test McTest");
         assert_eq!(output.masked["user"]["name"], "****");
         assert_eq!(output.raw["user"]["age"], 30);
@@ -134,6 +134,10 @@ mod tests {
             int: ${{ int }}
             float: ${{ float }}
             boolean: ${{ boolean }}
+            static_string: test
+            static_int: 5
+            static_float: 1.5
+            static_boolean: true
         "};
         let test_value: Value = from_str(yaml).unwrap();
         let data = json!({ "string": "test_string", "int": 5, "float": 1.5, "boolean": true });
@@ -143,5 +147,41 @@ mod tests {
         assert_eq!(output.raw["int"], 5);
         assert_eq!(output.raw["float"], 1.5);
         assert_eq!(output.raw["boolean"], true);
+
+        assert_eq!(output.raw["static_string"], "test");
+        assert_eq!(output.raw["static_int"], 5);
+        assert_eq!(output.raw["static_float"], 1.5);
+        assert_eq!(output.raw["static_boolean"], true);
+    }
+
+    #[test]
+    fn test_empty_value() {
+        let data = serde_json::Value::Null;
+        let output = compile_value(None, &data);
+
+        assert_eq!(output.raw["name"], serde_yaml::Value::Null);
+        assert_eq!(output.masked["name"], serde_yaml::Value::Null);
+    }
+
+    #[test]
+    fn test_nested_value() {
+        let yaml = indoc! {"
+            ---
+            nested_value: ${{ nested }}
+        "};
+        let test_value: Value = from_str(yaml).unwrap();
+        let data = json!({ "nested": { "a": "b", "c": ["d", "e"] } });
+        let output = compile_value(Some(test_value), &data);
+
+        let expected_output = indoc! {"
+            ---
+            a: b
+            c:
+              - d
+              - e
+        "};
+
+        let expected_output: Value = from_str(expected_output).unwrap();
+        assert_eq!(output.raw["nested_value"], expected_output);
     }
 }

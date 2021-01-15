@@ -1,5 +1,4 @@
-use handlebars::JsonRender;
-use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext, RenderError};
+use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -10,44 +9,70 @@ pub struct CompiledString {
 }
 
 pub fn compile_string(value: &str, data: &Value) -> CompiledString {
-    let mut handlebars_raw = Handlebars::new();
-    handlebars_raw.register_helper("mask", Box::new(fake_mask_helper));
+    let mut raw_value = value.to_string();
+    let mut masked_value = value.to_string();
 
-    let mut handlebars_masked = Handlebars::new();
-    handlebars_masked.register_helper("mask", Box::new(mask_helper));
+    let search = Regex::new(r"\$\{\{(.*?)}}").unwrap();
+    let hits = search.captures_iter(&value);
 
-    let value = value.replace("${{", "{{");
+    for hit in hits {
+        // nothing to do here becuase it doesn't have any value
+        if hit.iter().count() < 2 {
+            continue;
+        }
 
-    // create a raw version where data is visible
-    let raw = handlebars_raw.render_template(&value, data).unwrap();
+        let original_value = &hit[0];
+        let inside_value = hit[1].trim();
 
-    // create a masked version where mask is converted to ****
-    let masked = handlebars_masked.render_template(&value, data).unwrap();
+        // grab parts of inside_value to check if there's a mask
+        let parts: Vec<&str> = inside_value.split(" ").collect();
 
-    CompiledString { raw, masked }
-}
+        // figure out pointer and if we should mask value
+        let (pointer, has_mask) = match parts.len() {
+            1 => {
+                let pointer = format!("/{}", parts[0].replace(".", "/"));
+                (pointer, false)
+            }
+            _ => {
+                if parts.len() == 2 {
+                    let pointer = format!("/{}", parts[1].replace(".", "/"));
+                    (pointer, true)
+                } else {
+                    panic!("invalid template `{}`", original_value);
+                }
+            }
+        };
 
-fn mask_helper(
-    _: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> Result<(), RenderError> {
-    out.write("****".as_ref())?;
-    return Ok(());
-}
+        // grab data at pointer
+        let data = data.pointer(&pointer).unwrap_or(&Value::Null);
 
-fn fake_mask_helper(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
-    let param = h.param(0).unwrap();
-    out.write(param.value().render().as_ref())?;
-    Ok(())
+        // handle case where no data was found
+        if data.is_null() {
+            raw_value = raw_value.replace(original_value, "");
+            masked_value = masked_value.replace(original_value, "");
+            continue;
+        }
+
+        // data needs to be a string
+        let new_raw_value = match data {
+            Value::String(string) => string.to_string(),
+            value => {
+                format!("{}", value)
+            }
+        };
+        let new_masked_value = match has_mask {
+            false => new_raw_value.to_string(),
+            true => "****".to_string(),
+        };
+
+        raw_value = raw_value.replace(original_value, &new_raw_value);
+        masked_value = masked_value.replace(original_value, &new_masked_value);
+    }
+
+    CompiledString {
+        raw: raw_value,
+        masked: masked_value,
+    }
 }
 
 #[cfg(test)]
@@ -57,11 +82,11 @@ mod tests {
 
     #[test]
     fn test_plain() {
-        let data = json!({ "name": "Test McTest" });
-        let test_string = "I am ${{ name }}";
+        let data = json!({ "first_name": "Test", "last_name": "McTest" });
+        let test_string = "I am ${{ first_name }} ${{ mask last_name }}";
         let output = compile_string(test_string, &data);
         assert_eq!(output.raw, "I am Test McTest");
-        assert_eq!(output.masked, "I am Test McTest");
+        assert_eq!(output.masked, "I am Test ****");
     }
 
     #[test]
@@ -95,5 +120,54 @@ mod tests {
         let output = compile_string(test_string, &data);
         assert_eq!(output.raw, "test_string");
         assert_eq!(output.masked, "****");
+    }
+
+    #[test]
+    fn test_empty_tag() {
+        let data = json!({
+            "test": "test_string"
+        });
+        let test_string = "${{ }}";
+        let output = compile_string(test_string, &data);
+
+        assert_eq!(output.raw, "");
+        assert_eq!(output.masked, "");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_format() {
+        let data = json!({
+            "test": "test_string"
+        });
+        let test_string = "${{ mask path invalid }}";
+        compile_string(test_string, &data);
+    }
+
+    #[test]
+    fn test_missing_value() {
+        let data = json!({
+            "test": "test_string"
+        });
+        let test_string = "Path [${{ invalid.path }}] is invalid";
+        let output = compile_string(test_string, &data);
+
+        assert_eq!(output.raw, "Path [] is invalid");
+        assert_eq!(output.masked, "Path [] is invalid");
+    }
+
+    #[test]
+    fn test_nested_value() {
+        let data = json!({
+            "nested": {
+                "a": "b",
+                "c": ["d", "e"]
+            }
+        });
+        let test_string = "nested: ${{ mask nested }}";
+        let output = compile_string(test_string, &data);
+
+        assert_eq!(output.raw, "nested: {\"a\":\"b\",\"c\":[\"d\",\"e\"]}");
+        assert_eq!(output.masked, "nested: ****");
     }
 }
