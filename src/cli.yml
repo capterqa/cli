@@ -20,7 +20,6 @@ subcommands:
             help: post the run to a url after completion
             value_name: URL
             takes_value: true
-            default_value: 'http://localhost:3002/api/webhooks/runs'
         - dry-run:
             long: dry-run
             help: skip posting the run to the webhook
