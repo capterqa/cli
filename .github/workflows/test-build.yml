@@ -46,24 +46,13 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  release:
-    name: release
+  deploy:
+    name: deploy
     needs: build-test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/alpha'
     steps:
       - uses: actions/checkout@v2
-
-      - name: semantic-release
-        id: semantic
-        uses: cycjimmy/semantic-release-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          extra_plugins: |
-            @semantic-release/commit-analyzer
-            @semantic-release/release-notes-generator
-            @semantic-release/github
-            @semantic-release/git
 
       - uses: actions-rs/install@v0.1
         with:
@@ -71,17 +60,28 @@ jobs:
           version: 1.0.0-alpha.3
           use-tool-cache: true
 
-      - name: bump version number in Cargo.toml
-        uses: actions-rs/cargo@v1
-        if: steps.semantic.outputs.new_release_published == 'true'
-        with:
-          command: semver
-          args: set ${{ steps.semantic.outputs.new_release_version }}
+      - run: cargo semver bump pre alpha
+
+      - run: echo "VERSION=$(cargo semver get)" >> $GITHUB_ENV
+
+      - run: echo $VERSION
 
       - name: commit new version
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: v${{ steps.semantic.outputs.new_release_version }}
-          commit_user_name: GitHub Action
-          commit_user_email: github-action@users.noreply.github.com
-          commit_author: GitHub Action <github-action@users.noreply.github.com>
+          branch: alpha
+          commit_message: v${{ env.VERSION }}
+          tagging_message: v${{ env.VERSION }}
+          commit_user_name: github-actions
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_name: v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          body: v${{ env.VERSION }}
+          draft: false
+          prerelease: true
