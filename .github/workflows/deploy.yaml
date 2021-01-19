@@ -12,16 +12,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
+      - run: echo "VERSION=$(echo ${GITHUB_REF:11})" >> $GITHUB_ENV
 
       - name: create release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          release_name: ${{ env.VERSION }}
-          tag_name: ${{ env.VERSION }}
-          body: ${{ env.VERSION }}
+          release_name: v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          body: |
+            ### Installation
+
+            ```console
+            $ cargo install capter --vers ${{ env.VERSION }}
+            ```
           draft: false
           prerelease: true
 
