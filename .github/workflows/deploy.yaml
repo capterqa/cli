@@ -1,13 +1,34 @@
 name: publish
 
 on:
-  release:
-    types: [published, released, prerelease]
+  create:
+    tags:
+      - 'v*'
 
 jobs:
+  github-release:
+    name: github-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
+
+      - name: create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_name: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          body: ${{ env.VERSION }}
+          draft: false
+          prerelease: true
+
   publish-binary:
     name: publish-binary-${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    needs: github-release
     strategy:
       matrix:
         include:
@@ -17,9 +38,9 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
 
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            binary-suffix: .exe
+          # - os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   binary-suffix: .exe
 
           - os: macos-latest
             target: x86_64-apple-darwin
@@ -27,9 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: set version
-        id: version
-        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+      - run: echo "VERSION=$(echo ${GITHUB_REF:10})" >> $GITHUB_ENV
 
       - name: install rust
         uses: actions-rs/toolchain@v1
@@ -46,20 +65,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: strip target/release/capter
 
-      - name: create release artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: capter-${{ matrix.target }}${{ matrix.binary-suffix }}
-          path: target/release/capter${{ matrix.binary-suffix }}
-          retention-days: 5
-
       - name: upload binaries to release
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/release/capter${{ matrix.binary-suffix }}
-          asset_name: capter-${{ steps.version.outputs.VERSION }}-${{ matrix.target }}${{ matrix.binary-suffix }}
-          tag: ${{ github.ref }}
+          asset_name: capter-${{ env.VERSION }}-${{ matrix.target }}${{ matrix.binary-suffix }}
+          tag: ${{ env.VERSION }}
 
   publish-crate:
     name: publish-crate

@@ -1,6 +1,5 @@
 name: test-build
 
-# runs on push but ignores tags (release)
 on:
   push:
     branches:
@@ -12,6 +11,7 @@ jobs:
   build-test:
     name: build-test
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
     steps:
       - uses: actions/checkout@v2
 
@@ -53,6 +53,8 @@ jobs:
     if: github.ref == 'refs/heads/alpha'
     steps:
       - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
 
       - uses: actions-rs/install@v0.1
         with:
@@ -70,18 +72,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           branch: alpha
-          commit_message: v${{ env.VERSION }}
+          commit_message: v${{ env.VERSION }} [skip ci]
           tagging_message: v${{ env.VERSION }}
           commit_user_name: github-actions
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-
-      - name: create release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          release_name: v${{ env.VERSION }}
-          tag_name: v${{ env.VERSION }}
-          body: v${{ env.VERSION }}
-          draft: false
-          prerelease: true
