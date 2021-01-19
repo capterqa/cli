@@ -1,7 +1,7 @@
 use crate::ui::TerminalUi;
 use crossterm::{
     execute,
-    style::{Attribute, Print, SetAttribute},
+    style::{Attribute, Color, Print, SetAttribute, SetForegroundColor},
 };
 use std::io::stdout;
 
@@ -32,10 +32,27 @@ impl TerminalUi {
     pub fn webhook_done(&self) {
         execute!(
             stdout(),
+            SetForegroundColor(Color::Green),
+            Print("✓\n"),
+            SetAttribute(Attribute::Reset),
             SetAttribute(Attribute::Dim),
             Print("done! "),
             SetAttribute(Attribute::Reset),
             Print("✨"),
+            Print("\n"),
+            SetAttribute(Attribute::Reset),
+        )
+        .unwrap();
+    }
+    pub fn webhook_error(&self, error: &str) {
+        execute!(
+            stdout(),
+            SetForegroundColor(Color::Red),
+            Print("✕\n"),
+            SetAttribute(Attribute::Reset),
+            SetAttribute(Attribute::Dim),
+            Print("Error sending webhook: "),
+            Print(error),
             Print("\n"),
             SetAttribute(Attribute::Reset),
         )

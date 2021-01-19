@@ -39,7 +39,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: test --token ${{ secrets.CAPTER_TOKEN }} --dry-run
+          args: test --token ${{ secrets.CAPTER_TOKEN }}
 
       - name: upload to codecov.io
         uses: codecov/codecov-action@v1.0.2

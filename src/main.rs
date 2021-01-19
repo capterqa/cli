@@ -4,7 +4,7 @@ mod ui;
 mod workflow;
 
 use chrono::{DateTime, Utc};
-use clap::{crate_version, App, AppSettings};
+use clap::{crate_version, load_yaml, App, AppSettings};
 use globwalk;
 use path_clean::PathClean;
 use serde::Serialize;
@@ -14,9 +14,6 @@ use std::time::Instant;
 use ui::TerminalUi;
 use ureq;
 use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig};
-
-#[macro_use]
-extern crate clap;
 
 #[derive(Debug, Serialize)]
 pub struct WorkflowRun {
@@ -87,6 +84,16 @@ fn main() {
 
         terminal_ui.summarize(&workflow_runs);
 
+        let webhook = match webhook {
+            Some(val) => Some(val),
+            // if no value, then check if token is set
+            // if token is set, we send to capter.io
+            None => match token.is_some() {
+                true => Some("https://app.capter.io/api/webhooks/runs"),
+                false => None,
+            },
+        };
+
         // post to webhook
         if let Some(webhook) = webhook {
             if dry_run {
@@ -96,7 +103,7 @@ fn main() {
 
             terminal_ui.webhook_start(webhook);
 
-            let mut request = ureq::request("post", webhook);
+            let mut request = ureq::request("POST", webhook);
 
             // add token if set
             if let Some(token) = token {
@@ -112,8 +119,12 @@ fn main() {
                 Ok(_) => {
                     terminal_ui.webhook_done();
                 }
+                Err(ureq::Error::Status(_, res)) => {
+                    let error = res.into_string().unwrap();
+                    terminal_ui.webhook_error(&error);
+                }
                 Err(err) => {
-                    println!("{}", err.to_string());
+                    terminal_ui.webhook_error(&err.to_string());
                 }
             }
         }
