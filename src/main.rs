@@ -1,5 +1,6 @@
 mod assert;
 mod compile;
+mod source;
 mod ui;
 mod workflow;
 
@@ -9,12 +10,12 @@ use globwalk;
 use path_clean::PathClean;
 use serde::Serialize;
 use serde_json::json;
+use source::get_source;
 use std::fs;
 use std::time::Instant;
 use ui::TerminalUi;
 use ureq;
-use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig};
-
+use workflow::{parse_yaml, run_workflow, RequestData, WorkflowConfig};
 #[derive(Debug, Serialize)]
 pub struct WorkflowRun {
     pub workflow: WorkflowConfig,

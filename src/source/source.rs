@@ -1,3 +1,6 @@
+use std::env;
+
+use ci_info::types::Vendor;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -44,6 +47,17 @@ pub fn get_source() -> Source {
 
     if let Some(vendor) = info.name {
         source.ci = Some(vendor);
+    }
+
+    // custom logic for ci
+    match info.vendor {
+        Some(Vendor::GitHubActions) => {
+            source.sha = match env::var("GITHUB_SHA") {
+                Ok(val) => Some(val),
+                Err(_e) => None,
+            }
+        }
+        _ => {}
     }
 
     source
