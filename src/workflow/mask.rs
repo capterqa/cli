@@ -24,6 +24,9 @@ fn deep_replace(value: &Value, mask: &Vec<String>) -> Value {
         Value::Object(map) => {
             let mut new_map = Map::new();
             for (k, v) in map.iter() {
+                if v.is_object() || v.is_array() {
+                    return deep_replace(v, mask);
+                };
                 if mask.contains(k) {
                     new_map.insert(k.to_owned(), json!("****"));
                 } else {
