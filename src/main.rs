@@ -17,6 +17,8 @@ use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig
 
 #[derive(Debug, Serialize)]
 pub struct WorkflowRun {
+    pub file: Option<String>,
+    pub name: String,
     pub workflow: WorkflowConfig,
     pub created_at: DateTime<Utc>,
     pub run_time: i64,
@@ -72,6 +74,8 @@ fn main() {
             let run_time = timer.elapsed().as_millis() as i64;
 
             let workflow_run = WorkflowRun {
+                name: workflow_config.name.clone(),
+                file: Some(workflow_config.file.clone().unwrap_or("".to_string())),
                 workflow: workflow_config,
                 created_at: Utc::now(),
                 requests,
