@@ -1,7 +1,9 @@
 name: publish
 
 on:
-  create:
+  push:
+    branches:
+      - '!*'
     tags:
       - 'v*'
 
