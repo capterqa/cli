@@ -25,17 +25,17 @@ pub struct Source {
     pub meta: Option<serde_json::Value>,
 }
 
-pub fn get_source() -> Source {
+pub fn get_source(skip_git: bool) -> Source {
     let ci_info = ci_info::get();
-    let lgc = LastGitCommit::new().build();
 
     let mut source = Source {
         source: RunSource::cli,
         ..Default::default()
     };
 
-    // TODO: make this optional
-    if true {
+    if skip_git == false {
+        println!("skip git: {}", skip_git);
+        let lgc = LastGitCommit::new().build();
         if let Ok(lgc) = lgc {
             source.branch = Some(lgc.branch().clone());
             source.sha = Some(lgc.id().long().clone());
@@ -50,10 +50,6 @@ pub fn get_source() -> Source {
     } else {
         source.source = RunSource::ci;
     };
-
-    if let Some(branch_name) = ci_info.branch_name {
-        source.branch = Some(branch_name);
-    }
 
     if let Some(vendor) = ci_info.name {
         source.ci = Some(vendor);
