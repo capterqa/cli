@@ -39,9 +39,9 @@ fn main() {
         let webhook = matches.value_of("webhook");
         let glob_pattern = matches.value_of("INPUT").unwrap();
         let dry_run = matches.is_present("dry-run");
-
+        let skip_git = matches.is_present("skip-git");
         let mut workflow_runs: Vec<WorkflowRun> = vec![];
-        let source = get_source();
+        let source = get_source(skip_git);
 
         let entries = globwalk::glob(glob_pattern).expect("Failed to read glob pattern");
         let configs: Vec<WorkflowConfig> = entries
