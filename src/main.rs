@@ -65,7 +65,7 @@ fn main() {
             // track time
             let timer = Instant::now();
 
-            let requests = run_workflow(&workflow_config, |event| {
+            let (requests, passed) = run_workflow(&workflow_config, |event| {
                 terminal_ui.update(event);
             })
             .unwrap();
@@ -80,7 +80,7 @@ fn main() {
                 created_at: Utc::now(),
                 requests,
                 run_time,
-                passed: true,
+                passed,
             };
 
             workflow_runs.push(workflow_run);

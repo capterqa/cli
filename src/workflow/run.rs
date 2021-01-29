@@ -20,7 +20,7 @@ pub enum CallbackEvent<'a> {
 pub fn run_workflow(
     config: &WorkflowConfig,
     mut callback: impl FnMut(CallbackEvent),
-) -> Result<Vec<RequestData>, Box<dyn std::error::Error>> {
+) -> Result<(Vec<RequestData>, bool), Box<dyn std::error::Error>> {
     callback(CallbackEvent::RunStart(config));
     let mut workflow_data = json!({});
 
@@ -139,5 +139,5 @@ pub fn run_workflow(
 
     callback(CallbackEvent::RunDone(config, workflow_passed));
 
-    Ok(requests)
+    Ok((requests, workflow_passed))
 }
