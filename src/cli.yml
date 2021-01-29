@@ -20,6 +20,9 @@ subcommands:
             help: post the run to a url after completion
             value_name: URL
             takes_value: true
+        - skip-git:
+            long: skip-git
+            help: don't pass any git information to the webhook
         - dry-run:
             long: dry-run
             help: skip posting the run to the webhook
