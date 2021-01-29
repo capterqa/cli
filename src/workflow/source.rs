@@ -1,3 +1,4 @@
+use last_git_commit::LastGitCommit;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -25,24 +26,36 @@ pub struct Source {
 }
 
 pub fn get_source() -> Source {
-    let info = ci_info::get();
+    let ci_info = ci_info::get();
+    let lgc = LastGitCommit::new().build();
 
     let mut source = Source {
         source: RunSource::cli,
         ..Default::default()
     };
 
-    if info.ci == false {
+    // TODO: make this optional
+    if true {
+        if let Ok(lgc) = lgc {
+            source.branch = Some(lgc.branch().clone());
+            source.sha = Some(lgc.id().long().clone());
+            if let Some(commit) = lgc.message() {
+                source.commit_message = Some(commit.clone());
+            }
+        }
+    }
+
+    if ci_info.ci == false {
         return source;
     } else {
         source.source = RunSource::ci;
     };
 
-    if let Some(branch_name) = info.branch_name {
+    if let Some(branch_name) = ci_info.branch_name {
         source.branch = Some(branch_name);
     }
 
-    if let Some(vendor) = info.name {
+    if let Some(vendor) = ci_info.name {
         source.ci = Some(vendor);
     }
 
