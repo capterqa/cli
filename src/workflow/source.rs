@@ -34,7 +34,6 @@ pub fn get_source(skip_git: bool) -> Source {
     };
 
     if skip_git == false {
-        println!("skip git: {}", skip_git);
         let lgc = LastGitCommit::new().build();
         if let Ok(lgc) = lgc {
             source.branch = Some(lgc.branch().clone());
