@@ -1,6 +1,6 @@
 [package]
 name = "capter"
-version = "1.0.0-alpha.8"
+version = "1.0.0-alpha.9"
 authors = ["capter.io <filip@capter.io>"]
 license = "MIT"
 description = "Test your APIs with the CapterQA CLI."
