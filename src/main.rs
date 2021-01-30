@@ -56,6 +56,8 @@ fn main() {
 
         let mut terminal_ui = TerminalUi::new(&configs, is_debug);
 
+        terminal_ui.print_run_source(&source);
+
         for workflow_config in configs {
             if workflow_config.skip.is_some() {
                 terminal_ui.skipped_workflow(&workflow_config);

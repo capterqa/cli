@@ -1,5 +1,9 @@
-use crate::workflow::WorkflowConfig;
-use crossterm::tty::IsTty;
+use crate::workflow::{source::Source, WorkflowConfig};
+use crossterm::{
+    execute,
+    style::{Attribute, Print, SetAttribute},
+    tty::IsTty,
+};
 use std::{io::stdout, time::Instant};
 
 pub struct TerminalUi {
@@ -12,6 +16,7 @@ pub struct TerminalUi {
     pub failed_steps_count: i32,
     pub failed_workflows_count: i32,
     pub timer: Instant,
+    pub is_debug: bool,
 }
 
 impl TerminalUi {
@@ -39,6 +44,30 @@ impl TerminalUi {
             skipped_workflows_count: 0,
             workflow_count,
             step_count,
+            is_debug,
         }
+    }
+
+    pub fn print_run_source(&self, source: &Source) {
+        if self.is_debug {
+            execute!(
+                stdout(),
+                SetAttribute(Attribute::Bold),
+                Print("\ngit info:\n"),
+                SetAttribute(Attribute::Reset),
+                Print(format!("  source: {:?}\n", &source.source)),
+                Print(TerminalUi::format_attr("ci", &source.ci)),
+                Print(TerminalUi::format_attr("repo", &source.repository)),
+                Print(TerminalUi::format_attr("sha", &source.sha)),
+                Print(TerminalUi::format_attr("branch", &source.branch)),
+                Print(TerminalUi::format_attr("commit", &source.commit_message)),
+                SetAttribute(Attribute::Reset),
+            )
+            .unwrap();
+        }
+    }
+
+    fn format_attr(key: &str, val: &Option<String>) -> String {
+        format!("  {}: {}\n", &key, &val.clone().unwrap_or("".to_string()))
     }
 }

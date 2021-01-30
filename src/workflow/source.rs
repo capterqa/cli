@@ -44,10 +44,9 @@ pub fn get_source(skip_git: bool) -> Source {
         }
     }
 
-    if ci_info.ci == false {
-        return source;
-    } else {
-        source.source = RunSource::ci;
+    source.source = match ci_info.ci {
+        true => RunSource::ci,
+        false => RunSource::cli,
     };
 
     if let Some(vendor) = ci_info.name {
