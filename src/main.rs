@@ -3,28 +3,12 @@ mod compile;
 mod ui;
 mod workflow;
 
-use chrono::{DateTime, Utc};
 use clap::{crate_version, load_yaml, App, AppSettings};
 use globwalk;
-use path_clean::PathClean;
-use serde::Serialize;
 use serde_json::json;
-use std::fs;
-use std::time::Instant;
 use ui::TerminalUi;
 use ureq;
-use workflow::{get_source, parse_yaml, run_workflow, RequestData, WorkflowConfig};
-
-#[derive(Debug, Serialize)]
-pub struct WorkflowRun {
-    pub file: Option<String>,
-    pub name: String,
-    pub workflow: WorkflowConfig,
-    pub created_at: DateTime<Utc>,
-    pub run_time: i64,
-    pub passed: bool,
-    pub requests: Vec<RequestData>,
-}
+use workflow::{workflow_result::WorkflowResult, RunSource, WorkflowConfig};
 
 fn main() {
     let yml = load_yaml!("cli.yml");
@@ -33,59 +17,60 @@ fn main() {
         .version(crate_version!())
         .get_matches();
 
+    // handle the subcommand `test`
     if let Some(matches) = matches.subcommand_matches("test") {
+        // will run the CLI in debug mode
         let is_debug = matches.is_present("debug");
+        // passing a token will submit the run to the webhook
         let token = matches.value_of("token");
+        // the url we will post the run to after completion
         let webhook = matches.value_of("webhook");
-        let glob_pattern = matches.value_of("INPUT").unwrap();
+        // where to look for the yaml files
+        let tests_glob = matches.value_of("INPUT").unwrap();
+        // stops the cli from posting to the webhook
         let dry_run = matches.is_present("dry-run");
+        // stops the cli from collecting data (branch, commit message) from git
         let skip_git = matches.is_present("skip-git");
-        let mut workflow_runs: Vec<WorkflowRun> = vec![];
-        let source = get_source(skip_git);
 
-        let entries = globwalk::glob(glob_pattern).expect("Failed to read glob pattern");
+        // we'll collect all runs in this array so we can post it
+        // to the webhook after the run is complete
+        let mut workflow_runs: Vec<WorkflowResult> = vec![];
+
+        // collect the source information
+        let source = RunSource::new(skip_git);
+
+        let entries = globwalk::glob(tests_glob).expect("Failed to read glob pattern");
         let configs: Vec<WorkflowConfig> = entries
             .map(|entry| {
-                let path = entry.unwrap().into_path().clean();
-                let path = format!("{}", path.display());
-                let content = fs::read_to_string(path.clone()).unwrap();
-                let workflow = parse_yaml(content, path).expect("Failed to parse config.");
+                let entry = entry.expect("Invalid path");
+                let workflow = WorkflowConfig::from_yaml_file(&entry.into_path());
                 workflow
             })
             .collect();
 
-        let mut terminal_ui = TerminalUi::new(&configs, is_debug);
-
-        terminal_ui.print_run_source(&source);
+        // this sets up our UI
+        let mut terminal_ui = TerminalUi::new(&configs, &source, is_debug);
 
         for workflow_config in configs {
+            // setting `skip: true` in the workflow will stop
+            // it from running:
             if workflow_config.skip.is_some() {
                 terminal_ui.skipped_workflow(&workflow_config);
                 continue;
             }
 
-            // track time
-            let timer = Instant::now();
-
-            let (requests, passed) = run_workflow(&workflow_config, |event| {
+            // run the workflow and use the callback to update the UI on events like
+            // new step, step completed etc.
+            // we get `RequestData` back, which is the results of of this workflow
+            let workflow_result = WorkflowResult::from_config(&workflow_config, |event| {
                 terminal_ui.update(event);
-            })
-            .unwrap();
+            });
 
-            // save time
-            let run_time = timer.elapsed().as_millis() as i64;
-
-            let workflow_run = WorkflowRun {
-                name: workflow_config.name.clone(),
-                file: Some(workflow_config.file.clone().unwrap_or("".to_string())),
-                workflow: workflow_config,
-                created_at: Utc::now(),
-                requests,
-                run_time,
-                passed,
-            };
-
-            workflow_runs.push(workflow_run);
+            if let Ok(workflow_run) = workflow_result {
+                workflow_runs.push(workflow_run);
+            } else {
+                // TODO: handle error
+            }
         }
 
         terminal_ui.summarize(&workflow_runs);

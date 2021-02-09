@@ -1,6 +1,19 @@
+use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fs,
+    path::PathBuf,
+};
 
+/// A `WorkflowConfig` is the struct we convert the yaml files into.
+///
+/// When the CLI runs, it will convert every yaml into a `WorkflowConfig`,
+/// and run them synchronously. Each `WorkflowConfig` includes one or more
+/// *requests* that will be called when running it.
+///
+/// This struct is used by `serde-yaml` to parse the files, so every property
+/// in this struct will be a valid value in those files.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowConfig {
     pub file: Option<String>,
@@ -44,9 +57,23 @@ pub struct WorkflowConfigGraphQlConfig {
     pub variables: Option<serde_yaml::Value>,
 }
 
-pub fn parse_yaml(yaml: String, path: String) -> Result<WorkflowConfig, serde_yaml::Error> {
-    let mut yaml: WorkflowConfig = serde_yaml::from_str(&yaml)?;
-    yaml.file = Some(path);
+impl WorkflowConfig {
+    pub fn from_yaml_file(path: &PathBuf) -> WorkflowConfig {
+        let path = path
+            .clean()
+            .into_os_string()
+            .into_string()
+            .expect("Failed to parse path");
 
-    Ok(yaml)
+        let file_content = fs::read_to_string(&path).expect(&format!("Failed to read {}", path));
+        let mut workflow_config: WorkflowConfig =
+            serde_yaml::from_str(&file_content).expect(&format!("Failed to parse {}", path));
+
+        // if the user didn't set any file, add the actual file name
+        if workflow_config.file.is_none() {
+            workflow_config.file = Some(path.to_owned());
+        }
+
+        workflow_config
+    }
 }

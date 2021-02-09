@@ -1,6 +1,21 @@
-use crate::assert::{AssertionData, ValueAssertions};
+use crate::assert::ValueAssertions;
 use serde::Serialize;
 use serde_json::{json, Value};
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AssertionResultData {
+    pub passed: bool,
+    pub message: Option<String>,
+    pub assertion: Assertion,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AssertionData {
+    pub status: Option<u16>,
+    pub body: serde_json::Value,
+    pub headers: serde_json::Value,
+    pub duration: i64,
+}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Assertion {
