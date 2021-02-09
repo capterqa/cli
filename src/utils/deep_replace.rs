@@ -1,26 +1,8 @@
-use crate::workflow::{ResponseData, WorkflowConfigStepOptions};
 use serde_json::{json, Map, Value};
 
-pub fn mask(response_result: &ResponseData, options: &WorkflowConfigStepOptions) -> ResponseData {
-    let mut response_result = response_result.clone();
-    if let Some(mask) = &options.mask {
-        if mask.len() == 0 {
-            return response_result;
-        }
-
-        let headers = deep_replace(&response_result.headers, mask);
-        response_result.headers = headers;
-
-        if let Some(body) = &response_result.body {
-            let body = deep_replace(body, mask);
-            response_result.body = Some(body);
-        }
-    }
-
-    response_result
-}
-
-fn deep_replace(value: &Value, mask: &Vec<String>) -> Value {
+/// Walks through a `Value` and maskes the value of any property with
+/// a key defined in the `mask` argument.
+pub fn deep_replace(value: &Value, mask: &Vec<String>) -> Value {
     match value {
         Value::Object(map) => {
             let mut new_map = Map::new();

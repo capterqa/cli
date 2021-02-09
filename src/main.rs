@@ -1,6 +1,7 @@
 mod assert;
 mod compile;
 mod ui;
+mod utils;
 mod workflow;
 
 use clap::{crate_version, load_yaml, App, AppSettings};

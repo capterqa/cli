@@ -1,15 +1,14 @@
+use super::{response::ResponseData, WorkflowConfigAssertion};
 use crate::{
     assert::AssertionResultData,
     compile::CompiledString,
     compile::{compile_string, compile_value, CompiledValue},
+    utils::HttpRequest,
     workflow::{WorkflowConfig, WorkflowConfigStep},
 };
 use chrono::{DateTime, Utc};
 use serde::Serialize;
-use serde_json::{json, Value};
-use std::time::Instant;
-
-use super::{response::ResponseData, WorkflowConfigAssertion};
+use serde_json::Value;
 
 /// Used create a request from a WorkflowConfigStep,
 /// call it, and assert on the response.
@@ -49,6 +48,10 @@ pub struct RequestData {
 }
 
 impl Request {
+    /// Creates a new request. This will setup it up
+    /// and make sure we have all the properties set, like
+    /// `url`, `body` etc. You can use `.call()` to make the
+    /// request and then assert on it using `.assert_on_response()`.
     pub fn new(
         workflow_config: &WorkflowConfig,
         step_index: i32,
@@ -80,46 +83,35 @@ impl Request {
         }
     }
 
+    /// Makes the requests and set the response. This needs to
+    /// be called before doing any assertions.
     pub fn call(&mut self) -> Option<ResponseData> {
         let data = self.data();
-        let mut request = ureq::request(&data.method, &data.url);
+        let mut request = HttpRequest::new(data.url, data.method);
 
         // add query
         if let Some(query) = &data.query {
-            if let Some(mapping) = query.as_mapping() {
-                for (key, value) in mapping {
-                    let (key, value) = parse_key_value(key, value);
-                    request = request.query(&key, &value);
-                }
-            }
+            request.add_query(query);
         }
 
         // add headers
         if let Some(headers) = &data.headers {
-            if let Some(mapping) = headers.as_mapping() {
-                for (key, value) in mapping {
-                    let (key, value) = parse_key_value(key, value);
-                    request = request.set(&key, &value);
-                }
-            }
+            request.add_headers(headers);
         }
 
-        // track time of request
-        let timer = Instant::now();
+        if let Some(body) = &data.body {
+            request.add_body(body);
+        }
 
-        let result = match &data.body {
-            // call with body
-            Some(body) => request.send_json(json!(body)),
-            // and without body
-            _ => request.call(),
-        };
-
-        let response_time = timer.elapsed().as_millis() as i64;
+        let result = request.call();
+        let response_time = request.get_elapsed();
         self.response = Some(ResponseData::from_result(result, response_time));
 
         self.response.to_owned()
     }
 
+    /// Run assertions on the request response.
+    /// Make sure to call `.call()` before running this.
     pub fn assert_on_response(
         &mut self,
         assertions: &Vec<WorkflowConfigAssertion>,
@@ -135,6 +127,7 @@ impl Request {
         return vec![];
     }
 
+    /// Return the copy data for this request.
     pub fn data(&self) -> RequestData {
         RequestData {
             created_at: self.created_at,
@@ -150,6 +143,9 @@ impl Request {
         }
     }
 
+    /// Return the copy data for this request,
+    /// where sensitive data is masked. This will
+    /// return a masked version of response too.
     pub fn data_masked(&self) -> RequestData {
         let mut data = self.data();
         let response = match data.response {
@@ -254,12 +250,4 @@ fn get_url(
     };
 
     panic!("no url found");
-}
-
-fn parse_key_value(key: &serde_yaml::Value, value: &serde_yaml::Value) -> (String, String) {
-    let value = match &value {
-        &serde_yaml::Value::String(val) => val.to_string(),
-        val => json!(val).to_string(),
-    };
-    (key.as_str().unwrap().to_owned(), value.to_owned())
 }

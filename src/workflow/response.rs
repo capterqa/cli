@@ -1,12 +1,12 @@
 use crate::{
     assert::{assert, parse_assertion_string, AssertionData, AssertionResultData},
     compile::compile_string,
+    utils::deep_replace,
+    workflow::{WorkflowConfigAssertion, WorkflowConfigStepOptions},
 };
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_json::{json, Value};
-
-use super::{mask, WorkflowConfigAssertion, WorkflowConfigStepOptions};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct ResponseData {
@@ -117,7 +117,7 @@ impl ResponseData {
 
     pub fn into_masked(&self, options: &Option<WorkflowConfigStepOptions>) -> Option<ResponseData> {
         let mut response = match options {
-            Some(options) => mask(&self.to_owned(), options),
+            Some(options) => self.mask(options),
             _ => self.to_owned(),
         };
 
@@ -127,5 +127,24 @@ impl ResponseData {
         }
 
         Some(response)
+    }
+
+    pub fn mask(&self, options: &WorkflowConfigStepOptions) -> ResponseData {
+        let mut response_result = self.clone();
+        if let Some(mask) = &options.mask {
+            if mask.len() == 0 {
+                return response_result;
+            }
+
+            let headers = deep_replace(&response_result.headers, mask);
+            response_result.headers = headers;
+
+            if let Some(body) = &response_result.body {
+                let body = deep_replace(body, mask);
+                response_result.body = Some(body);
+            }
+        }
+
+        response_result
     }
 }
