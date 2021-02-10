@@ -7,6 +7,6 @@ pub mod workflow_result;
 pub use config::{
     WorkflowConfig, WorkflowConfigAssertion, WorkflowConfigStep, WorkflowConfigStepOptions,
 };
-pub use request::RequestData;
+pub use request::{Request, RequestData};
 pub use response::ResponseData;
 pub use run_source::RunSource;

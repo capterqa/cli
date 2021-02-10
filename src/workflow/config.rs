@@ -69,15 +69,23 @@ impl WorkflowConfig {
             .into_string()
             .expect("Failed to parse path");
 
-        let file_content = fs::read_to_string(&path).expect(&format!("Failed to read {}", path));
-        let mut workflow_config: WorkflowConfig =
-            serde_yaml::from_str(&file_content).expect(&format!("Failed to parse {}", path));
+        let yaml = fs::read_to_string(&path).expect(&format!("Failed to read {}", path));
+        let result = WorkflowConfig::from_yaml(yaml);
 
-        // if the user didn't set any file, add the actual file name
-        if workflow_config.file.is_none() {
-            workflow_config.file = Some(path.to_owned());
+        match result {
+            Ok(mut workflow_config) => {
+                // if the user didn't set any file, add the actual file name
+                if workflow_config.file.is_none() {
+                    workflow_config.file = Some(path.to_owned());
+                }
+
+                workflow_config
+            }
+            _ => panic!("Failed to parse {}", path),
         }
+    }
 
-        workflow_config
+    pub fn from_yaml(yaml: String) -> Result<WorkflowConfig, serde_yaml::Error> {
+        serde_yaml::from_str(&yaml)
     }
 }

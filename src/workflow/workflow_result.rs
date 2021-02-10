@@ -1,14 +1,12 @@
 use crate::{
     assert::AssertionResultData,
-    workflow::{RequestData, WorkflowConfig},
+    workflow::{Request, RequestData, WorkflowConfig},
 };
 use chrono::DateTime;
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::json;
 use std::{env, time::Instant};
-
-use super::request::Request;
 
 /// The result of a workflow is saved in to this struct.
 /// It can be serialized to JSON and we pass it to the webhook
@@ -136,5 +134,77 @@ impl WorkflowResult {
             run_time,
             passed: workflow_passed,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indoc::formatdoc;
+    use mockito::mock;
+
+    #[test]
+    /// Tests a full workflows, almost like an integration test.
+    /// The mocks will only work if body, header and query matches,
+    /// so if you get a 503 error back in means something bad with those.
+    fn test_run_workflow() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test")
+            .with_status(200)
+            .with_body(r#"[{"id": "1"}]"#)
+            .create();
+        let _m2 = mock("GET", "/test/1")
+            .with_status(200)
+            .match_body(r#"{"id":1}"#)
+            .match_header("id", "1")
+            .match_query("id=1")
+            .with_body(r#"{"hello": "world"}"#)
+            .create();
+
+        let yaml = formatdoc! {"
+            ---
+            name: test
+            steps:
+              - name: step 1
+                id: test
+                url: {url}/test
+                assertions:
+                  - !assert status equal 200
+                  - !assert body.0.id equal 1
+                  - !assert body.5.id equal 5
+              - name: step 2
+                url: {url}/test/{path}
+                query:
+                  id: {path}
+                headers:
+                  id: {path}
+                body:
+                  id: {path}
+                assertions:
+                  - !assert status equal 200
+                  - !assert body.hello equal world
+            ",
+            url = url,
+            path = "${{ test.response.body.0.id }}"
+        };
+        let workflow_config = WorkflowConfig::from_yaml(yaml.into());
+
+        match workflow_config {
+            Ok(workflow_config) => {
+                let result = WorkflowResult::from_config(&workflow_config, |_| {});
+                let result = result.unwrap();
+                let response1 = result.requests[0].response.to_owned().unwrap();
+                let response2 = result.requests[1].response.to_owned().unwrap();
+
+                assert_eq!(result.requests.len(), 2);
+                assert_eq!(response1.assertion_results[0].passed, true);
+                assert_eq!(
+                    response1.assertion_results[2].message,
+                    Some("expected null to equal 5".to_string())
+                );
+                assert_eq!(response2.assertion_results[0].message, None);
+            }
+            _ => assert!(false),
+        }
     }
 }
