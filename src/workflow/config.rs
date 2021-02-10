@@ -6,6 +6,8 @@ use std::{
     path::PathBuf,
 };
 
+use crate::utils::exit_with_code;
+
 /// A `WorkflowConfig` is the struct we convert the yaml files into.
 ///
 /// When the CLI runs, it will convert every yaml into a `WorkflowConfig`,
@@ -60,16 +62,19 @@ pub struct WorkflowConfigGraphQlConfig {
 impl WorkflowConfig {
     /// Create a WorfklowConfig from a path to a yaml file.
     ///
-    /// This will read the file and parse it, and panic if
+    /// This will read the file and parse it, and exit if
     /// something goes wrong.
     pub fn from_yaml_file(path: &PathBuf) -> WorkflowConfig {
-        let path = path
-            .clean()
-            .into_os_string()
-            .into_string()
-            .expect("Failed to parse path");
+        let path = match path.clean().into_os_string().into_string() {
+            Ok(path) => path,
+            _ => exit_with_code(exitcode::CONFIG, Some(&format!("Invalid path"))),
+        };
 
-        let yaml = fs::read_to_string(&path).expect(&format!("Failed to read {}", path));
+        let yaml = match fs::read_to_string(&path) {
+            Ok(val) => val,
+            _ => exit_with_code(exitcode::CONFIG, Some(&format!("Failed to read {}", path))),
+        };
+
         let result = WorkflowConfig::from_yaml(yaml);
 
         match result {
@@ -81,7 +86,10 @@ impl WorkflowConfig {
 
                 workflow_config
             }
-            _ => panic!("Failed to parse {}", path),
+            Err(err) => {
+                let message = format!("Failed to parse {}: {}", path, &err.to_string());
+                exit_with_code(exitcode::CONFIG, Some(&message));
+            }
         }
     }
 

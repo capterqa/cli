@@ -3,7 +3,7 @@ use crate::{
     assert::AssertionResultData,
     compile::CompiledString,
     compile::{compile_string, compile_value, CompiledValue},
-    utils::HttpRequest,
+    utils::{exit_with_code, HttpRequest},
     workflow::{WorkflowConfig, WorkflowConfigStep},
 };
 use chrono::{DateTime, Utc};
@@ -230,7 +230,7 @@ fn get_body(step: &WorkflowConfigStep, workflow_data: &Value) -> CompiledValue {
 /// Will use the step url if it's set,
 /// and fallback to the workflow url if it's not.
 ///
-/// This panics if no url is found, because it's required.
+/// This exit if no url is found, because it's required.
 fn get_url(
     step: &WorkflowConfigStep,
     workflow_data: &Value,
@@ -244,5 +244,8 @@ fn get_url(
         return compile_string(&url, &workflow_data);
     };
 
-    panic!("no url found");
+    exit_with_code(
+        exitcode::CONFIG,
+        Some(&format!("No url found for step: `{}`", step.name)),
+    );
 }
