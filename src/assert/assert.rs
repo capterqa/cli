@@ -35,7 +35,7 @@ pub struct AssertionData {
 
 /// The result from a parsed assertion string. This is
 /// used by the assert methods to assert.
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct AssertionTest {
     /// `equals`, `isAbove` etc.
     /// See `ASSERTION_TYPES`.
@@ -70,9 +70,14 @@ impl Assertion {
         let result = assert_fn(data, &assertion.value);
         let passed = result.is_none();
 
+        let is_masked = self.assertion_string.raw != self.assertion_string.masked;
+
         AssertionResultData {
             assertion: self.get_masked_assertion_test(),
-            message: result,
+            message: match is_masked {
+                true => Some("Hidden because of mask".to_string()),
+                false => result,
+            },
             passed,
         }
     }
@@ -141,4 +146,43 @@ pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
     }
 
     panic!("could not parse assertion [{}]", assertion_string);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_assertion() {
+        let data = json!({
+            "env": { "name": "Text McTest" }
+        });
+        let assertion_data = AssertionData {
+            body: json!({
+                "user": { "name": "Text McTest" },
+            }),
+            headers: json!({
+                "content-type": "application/json",
+            }),
+            duration: 500,
+            status: Some(200),
+        };
+
+        let assertion = Assertion::from_str("body.user.name equal ${{ env.name }}", &data);
+        let result = assertion.assert(&assertion_data);
+        assert_eq!(result.passed, true);
+
+        let assertion = Assertion::from_str("headers.nope isUndefined", &data);
+        let result = assertion.assert(&assertion_data);
+        assert_eq!(result.passed, true);
+
+        let assertion = Assertion::from_str("body isNotEmpty", &data);
+        let result = assertion.assert(&assertion_data);
+        assert_eq!(result.passed, true);
+
+        let assertion = Assertion::from_str("body.name equal ${{ mask env.name }}", &data);
+        let result = assertion.assert(&assertion_data);
+        assert_eq!(result.passed, false);
+        assert_eq!(result.message, Some("Hidden because of mask".to_string()));
+    }
 }
