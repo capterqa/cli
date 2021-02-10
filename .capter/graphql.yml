@@ -13,7 +13,7 @@ steps:
           }
         }
     assertions:
-      - !assert status equal 201
+      - !assert status equal 200
       - !assert headers.content-type contains application/json
       - !assert body.data.posts isArray
 
