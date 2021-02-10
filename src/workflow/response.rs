@@ -1,13 +1,15 @@
 use crate::{
-    assert::{assert, parse_assertion_string, AssertionData, AssertionResultData},
-    compile::compile_string,
+    assert::{assert, AssertionData, AssertionResultData},
     utils::deep_replace,
     workflow::{WorkflowConfigAssertion, WorkflowConfigStepOptions},
 };
+use assert::Assertion;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_json::{json, Value};
 
+/// The result from a request. You can run assertions on it
+/// using `.assert()`. This will populate `assertion_results`.
 #[derive(Debug, Serialize, Clone)]
 pub struct ResponseData {
     pub created_at: DateTime<Utc>,
@@ -34,6 +36,14 @@ impl Default for ResponseData {
 }
 
 impl ResponseData {
+    /// Create a response from a `ureq` response.
+    ///
+    /// If the request fails, that does not mean you won't get
+    /// a `ResponseData` back. Instead you will get a response
+    /// with the error codes etc on it, and you can run assertions on that.
+    ///
+    /// Sometimes an error is what we're expecting so it's
+    /// important that we handle that correctly.
     pub fn from_result(
         result: Result<ureq::Response, ureq::Error>,
         response_time: i64,
@@ -78,6 +88,8 @@ impl ResponseData {
         }
     }
 
+    /// Run assertions on the response.
+    /// Populates `.assertion_results`.
     pub fn assert(
         &mut self,
         assertions: &Vec<WorkflowConfigAssertion>,
@@ -85,6 +97,7 @@ impl ResponseData {
     ) -> Vec<AssertionResultData> {
         let mut assertions_results: Vec<AssertionResultData> = vec![];
 
+        // loop through the assertions and run them
         for assertion_string in assertions {
             let WorkflowConfigAssertion::assert(assertion_string) = assertion_string;
             let assertion_data = AssertionData {
@@ -94,27 +107,21 @@ impl ResponseData {
                 headers: self.headers.to_owned(),
             };
 
-            let assertion_string = compile_string(assertion_string, workflow_data);
-            let assertion_raw = parse_assertion_string(&assertion_string.raw);
-            let assertion_masked = parse_assertion_string(&assertion_string.masked);
+            let assertion = Assertion::from_str(assertion_string, workflow_data);
+            let result = assertion.assert(&assertion_data);
 
-            let result = assert(&assertion_raw, &assertion_data);
-            let passed = result.is_none();
-
-            let assertion_result_data = AssertionResultData {
-                assertion: assertion_masked,
-                message: result,
-                passed,
-            };
-
-            assertions_results.push(assertion_result_data);
+            assertions_results.push(result);
         }
 
         self.assertion_results = assertions_results;
-
         self.assertion_results.to_owned()
     }
 
+    /// Return a masked version of the response.
+    ///
+    /// It's using the `mask` property of options, and
+    /// anything with a key defined in that array will have its
+    /// value masked.
     pub fn into_masked(&self, options: &Option<WorkflowConfigStepOptions>) -> Option<ResponseData> {
         let mut response = match options {
             Some(options) => self.mask(options),
@@ -129,6 +136,7 @@ impl ResponseData {
         Some(response)
     }
 
+    /// Masks the response headers and body using a deep replace.
     pub fn mask(&self, options: &WorkflowConfigStepOptions) -> ResponseData {
         let mut response_result = self.clone();
         if let Some(mask) = &options.mask {

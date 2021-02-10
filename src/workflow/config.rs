@@ -58,6 +58,10 @@ pub struct WorkflowConfigGraphQlConfig {
 }
 
 impl WorkflowConfig {
+    /// Create a WorfklowConfig from a path to a yaml file.
+    ///
+    /// This will read the file and parse it, and panic if
+    /// something goes wrong.
     pub fn from_yaml_file(path: &PathBuf) -> WorkflowConfig {
         let path = path
             .clean()
