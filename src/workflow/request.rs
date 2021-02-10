@@ -147,16 +147,11 @@ impl Request {
     /// where sensitive data is masked. This will
     /// return a masked version of response too.
     pub fn data_masked(&self) -> RequestData {
-        let mut data = self.data();
+        let data = self.data();
         let response = match data.response {
             Some(response) => response.into_masked(&self.step.options),
             _ => None,
         };
-
-        // make sure body is a string
-        if let Some(body) = data.body {
-            data.body = Some(serde_json::to_string(&body).unwrap().into());
-        }
 
         RequestData {
             url: self.url.masked.to_owned(),

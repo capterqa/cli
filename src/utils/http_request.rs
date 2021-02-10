@@ -57,13 +57,17 @@ impl HttpRequest {
     pub fn call(&mut self) -> Result<ureq::Response, ureq::Error> {
         // reset timer
         self.timer = Instant::now();
+        let request = self.request.to_owned();
 
         // make the request
         match &self.body {
             // call with body
-            Some(body) => self.request.to_owned().send_json(json!(body)),
+            Some(body) => match body {
+                Value::String(str) => request.send_string(str),
+                _ => request.send_json(json!(body)),
+            },
             // or without body
-            _ => self.request.to_owned().call(),
+            _ => request.call(),
         }
     }
 
@@ -80,4 +84,108 @@ fn parse_key_value(key: &serde_yaml::Value, value: &serde_yaml::Value) -> (Strin
         val => json!(val).to_string(),
     };
     (key.as_str().unwrap().to_owned(), value.to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indoc::indoc;
+    use mockito::mock;
+    use serde_json::json;
+    use serde_yaml::from_str;
+
+    #[test]
+    fn test_basic_call() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test")
+            .with_status(200)
+            .with_body(r#"{"hello": "world"}"#)
+            .create();
+
+        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into());
+        let response = request.call();
+
+        match response {
+            Ok(response) => {
+                let value: serde_json::Value = response.into_json().unwrap();
+                assert_eq!(value, json!({ "hello": "world"}));
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_query_header_body() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test")
+            .match_body("{\"hello\":\"world\"}")
+            .match_header("test-header", "test-value")
+            .match_query("foo=bar")
+            .with_status(200)
+            .create();
+
+        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into());
+
+        let yaml = indoc! {"
+            ---
+            body:
+              hello: world
+            headers:
+              test-header: test-value
+            query:
+              foo: bar
+        "};
+        let config: Value = from_str(yaml).unwrap();
+
+        request.add_body(&config["body"]);
+        request.add_headers(&config["headers"]);
+        request.add_query(&config["query"]);
+
+        let response = request.call();
+
+        match response {
+            Ok(response) => {
+                assert_eq!(response.status(), 200);
+            }
+            Err(err) => {
+                println!("{}", err);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_query_string_body() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test")
+            .match_body("hello world")
+            .with_status(200)
+            .create();
+
+        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into());
+
+        let yaml = indoc! {"
+            ---
+            body: hello world
+        "};
+        let config: Value = from_str(yaml).unwrap();
+
+        println!("{:#?}", config["body"]);
+
+        request.add_body(&config["body"]);
+
+        let response = request.call();
+
+        match response {
+            Ok(response) => {
+                assert_eq!(response.status(), 200);
+            }
+            Err(err) => {
+                println!("{}", err);
+                assert!(false);
+            }
+        }
+    }
 }

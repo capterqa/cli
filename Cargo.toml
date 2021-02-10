@@ -32,6 +32,7 @@ last-git-commit = "0.2.0"
 
 [dev-dependencies]
 indoc = "1.0"
+mockito = "0.29.0"
 
 [profile.release]
 opt-level = 's'

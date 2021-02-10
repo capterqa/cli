@@ -123,15 +123,10 @@ impl ResponseData {
     /// anything with a key defined in that array will have its
     /// value masked.
     pub fn into_masked(&self, options: &Option<WorkflowConfigStepOptions>) -> Option<ResponseData> {
-        let mut response = match options {
+        let response = match options {
             Some(options) => self.mask(options),
             _ => self.to_owned(),
         };
-
-        // make sure body is a string
-        if let Some(body) = response.body {
-            response.body = Some(serde_json::to_string(&body).unwrap().into());
-        }
 
         Some(response)
     }
