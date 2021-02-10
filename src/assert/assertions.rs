@@ -1,3 +1,4 @@
+use crate::utils::exit_with_code;
 use regex::Regex;
 use serde_json::Value;
 
@@ -17,7 +18,10 @@ impl ValueAssertions {
             "match" => assert_match,
             "notMatch" => assert_not_match,
             "isUndefined" => assert_is_undefined,
-            val => panic!("assertion not found [{}]", val),
+            val => exit_with_code(
+                exitcode::CONFIG,
+                Some(&format!("assertion not found: `{}`", val)),
+            ),
         }
     }
 }

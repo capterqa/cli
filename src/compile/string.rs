@@ -1,3 +1,4 @@
+use crate::utils::exit_with_code;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
@@ -48,7 +49,10 @@ pub fn compile_string(value: &str, data: &Value) -> CompiledString {
                     let pointer = format!("/{}", parts[1].replace(".", "/"));
                     (pointer, true)
                 } else {
-                    panic!("invalid template `{}`", original_value);
+                    exit_with_code(
+                        exitcode::CONFIG,
+                        Some(&format!("invalid template: `{}`", original_value)),
+                    );
                 }
             }
         };

@@ -9,6 +9,7 @@ use globwalk;
 use serde_json::json;
 use ui::TerminalUi;
 use ureq;
+use utils::exit_with_code;
 use workflow::{workflow_result::WorkflowResult, RunSource, WorkflowConfig};
 
 fn main() {
@@ -40,7 +41,14 @@ fn main() {
         // collect the source information
         let source = RunSource::new(skip_git);
 
-        let entries = globwalk::glob(tests_glob).expect("Failed to read glob pattern");
+        let entries = match globwalk::glob(tests_glob) {
+            Ok(res) => res,
+            _ => exit_with_code(
+                exitcode::USAGE,
+                Some(&format!("Invalid search glob: `{}`", tests_glob)),
+            ),
+        };
+
         let configs: Vec<WorkflowConfig> = entries
             .map(|entry| {
                 let entry = entry.expect("Invalid path");
@@ -51,6 +59,8 @@ fn main() {
 
         // this sets up our UI
         let mut terminal_ui = TerminalUi::new(&configs, &source, is_debug);
+
+        let mut passed = true;
 
         for workflow_config in configs {
             // setting `skip: true` in the workflow will stop
@@ -68,6 +78,9 @@ fn main() {
             });
 
             if let Ok(workflow_run) = workflow_result {
+                if workflow_run.passed == false {
+                    passed = false
+                }
                 workflow_runs.push(workflow_run);
             } else {
                 // TODO: handle error
@@ -119,6 +132,12 @@ fn main() {
                     terminal_ui.webhook_error(&err.to_string());
                 }
             }
+        }
+
+        if passed {
+            exit_with_code(exitcode::OK, None);
+        } else {
+            exit_with_code(1, None);
         }
     }
 }

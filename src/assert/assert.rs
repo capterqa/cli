@@ -1,8 +1,8 @@
-use crate::assert::ASSERTION_TYPES;
 use crate::{
     assert::ValueAssertions,
     compile::{compile_string, CompiledString},
 };
+use crate::{assert::ASSERTION_TYPES, utils::exit_with_code};
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -91,7 +91,7 @@ impl Assertion {
 /// Parse an assertion string.
 ///
 /// It splits the string up and tries to figure out
-/// the different parts of an `AssertionTest`. Will panic
+/// the different parts of an `AssertionTest`. Will exit
 /// if it can't parse the input.
 pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
     let mut parts = assertion_string.split(' ').collect::<Vec<&str>>();
@@ -144,8 +144,13 @@ pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
             value: json!(value),
         };
     }
-
-    panic!("could not parse assertion [{}]", assertion_string);
+    exit_with_code(
+        exitcode::CONFIG,
+        Some(&format!(
+            "Could not parse assertion: `{}`",
+            assertion_string
+        )),
+    )
 }
 
 #[cfg(test)]
