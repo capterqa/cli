@@ -7,6 +7,7 @@ use assert::Assertion;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_json::{json, Value};
+use ureq::ErrorKind;
 
 /// The result from a request. You can run assertions on it
 /// using `.assert()`. This will populate `assertion_results`.
@@ -80,11 +81,19 @@ impl ResponseData {
                 status_text: response.status_text().to_owned(),
                 ..Default::default()
             },
-            Err(error) => ResponseData {
-                response_time,
-                status_text: error.to_string(),
-                ..Default::default()
-            },
+            Err(error) => {
+                // ending up here means there were NO response
+                let status_text = match &error.kind() {
+                    ErrorKind::Dns => format!("Could not connect to URL"),
+                    _ => error.kind().to_string(),
+                };
+
+                ResponseData {
+                    response_time,
+                    status_text,
+                    ..Default::default()
+                }
+            }
         }
     }
 
@@ -149,5 +158,101 @@ impl ResponseData {
         }
 
         response_result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockito::mock;
+
+    #[test]
+    fn test_successful_response() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test")
+            .with_status(200)
+            .with_body(r#"{"hello": "world"}"#)
+            .with_header("test-header", "test-value")
+            .create();
+
+        let result = ureq::request("GET", &format!("{}/test", url)).call();
+        let response = ResponseData::from_result(result, 0);
+
+        assert_eq!(response.status, Some(200));
+        assert_eq!(response.body, Some(json!({"hello": "world"})));
+    }
+
+    #[test]
+    fn test_bad_response() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/500").with_status(500).create();
+
+        let result = ureq::request("GET", &format!("{}/500", url)).call();
+        let response = ResponseData::from_result(result, 0);
+
+        assert_eq!(response.status_text, "Internal Server Error".to_string());
+        assert_eq!(response.status, Some(500));
+    }
+
+    #[test]
+    fn test_no_response() {
+        let result = ureq::request("GET", "http://bad-url").call();
+        let response = ResponseData::from_result(result, 0);
+
+        assert_eq!(response.status, None);
+        assert_eq!(response.status_text, "Could not connect to URL");
+    }
+
+    #[test]
+    fn test_mask_response() {
+        let response = ResponseData {
+            body: Some(json!({
+                "secret": "abc"
+            })),
+            headers: json!({
+                "secret": 123,
+            }),
+            ..Default::default()
+        };
+        let masked = response
+            .into_masked(&Some(WorkflowConfigStepOptions {
+                mask: Some(vec!["secret".to_string()]),
+            }))
+            .unwrap();
+
+        let body = masked.body.unwrap();
+        assert_eq!(body["secret"], "****");
+        assert_eq!(masked.headers["secret"], "****");
+    }
+
+    #[test]
+    fn test_assert() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test")
+            .with_status(200)
+            .with_body(r#"{"hello": "world"}"#)
+            .with_header("test-header", "test-value")
+            .create();
+
+        let result = ureq::request("GET", &format!("{}/test", url)).call();
+        let mut response = ResponseData::from_result(result, 1000);
+
+        let assertions = vec![
+            WorkflowConfigAssertion::assert("status equal 200".to_string()),
+            WorkflowConfigAssertion::assert("body.hello equal world".to_string()),
+            WorkflowConfigAssertion::assert("headers.test-header equal test-value".to_string()),
+            WorkflowConfigAssertion::assert("duration equal 500".to_string()),
+        ];
+
+        let assertion_results = response.assert(&assertions, &json!({}));
+        assert_eq!(assertion_results.len(), 4);
+        assert_eq!(assertion_results[0].passed, true);
+        assert_eq!(assertion_results[1].passed, true);
+        assert_eq!(assertion_results[2].passed, true);
+        assert_eq!(assertion_results[3].passed, false);
+        assert_eq!(
+            assertion_results[3].message,
+            Some("expected 1000 to equal 500".to_string())
+        );
     }
 }

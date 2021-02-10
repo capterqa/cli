@@ -89,3 +89,66 @@ impl WorkflowConfig {
         serde_yaml::from_str(&yaml)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indoc::indoc;
+
+    #[test]
+    fn test_file() {
+        let config = WorkflowConfig::from_yaml_file(&PathBuf::from("./.capter/posts.yml"));
+        assert_eq!(config.name, "posts");
+    }
+
+    #[test]
+    fn test_from_yaml() {
+        let yaml = indoc! {"
+            ---
+            name: test
+            steps:
+              - name: step 1
+                id: test
+                url: http://localhost:3002/test
+                assertions:
+                  - !assert status equal 200
+              - name: step 2
+                id: test
+                url: http://localhost:3002/test/1
+                assertions:
+                  - !assert status equal 200
+            "
+        };
+        let config = WorkflowConfig::from_yaml(yaml.into()).unwrap();
+        assert_eq!(config.name, "test");
+        assert_eq!(config.steps.len(), 2);
+        assert_eq!(config.steps[0].name, "step 1");
+    }
+
+    #[test]
+    #[should_panic(expected = "missing field `assertions`")]
+    fn test_bad_no_assertions() {
+        let yaml = indoc! {"
+            ---
+            name: test
+            steps:
+              - name: step 1
+            "
+        };
+        WorkflowConfig::from_yaml(yaml.into()).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "missing field `name`")]
+    fn test_bad_no_name() {
+        let yaml = indoc! {"
+            ---
+            steps:
+              - name: step 1
+                assertions:
+                  - !assert status equal 200
+            "
+        };
+        WorkflowConfig::from_yaml(yaml.into()).unwrap();
+    }
+}
