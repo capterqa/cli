@@ -1,4 +1,4 @@
-use crate::workflow::{source::Source, WorkflowConfig};
+use crate::workflow::{run_source::RunSource, WorkflowConfig};
 use crossterm::{
     execute,
     style::{Attribute, Print, SetAttribute},
@@ -6,6 +6,11 @@ use crossterm::{
 };
 use std::{io::stdout, time::Instant};
 
+/// The `TerminalUi` is responsible for printing out information
+/// about the run, its worfklows and requests.
+///
+/// It can run in either with *tty* or without it. If tty is supported
+/// the UI will be a lot nicer, but not all environments support it.
 pub struct TerminalUi {
     pub is_tty: bool,
     pub workflow_count: i32,
@@ -20,11 +25,15 @@ pub struct TerminalUi {
 }
 
 impl TerminalUi {
-    pub fn new(configs: &Vec<WorkflowConfig>, is_debug: bool) -> TerminalUi {
+    pub fn new(configs: &Vec<WorkflowConfig>, source: &RunSource, is_debug: bool) -> TerminalUi {
         let is_tty = match is_debug {
             true => false,
             false => stdout().is_tty(),
         };
+
+        if is_debug {
+            TerminalUi::print_run_source(source);
+        }
 
         let timer = Instant::now();
 
@@ -48,23 +57,21 @@ impl TerminalUi {
         }
     }
 
-    pub fn print_run_source(&self, source: &Source) {
-        if self.is_debug {
-            execute!(
-                stdout(),
-                SetAttribute(Attribute::Bold),
-                Print("\ngit info:\n"),
-                SetAttribute(Attribute::Reset),
-                Print(format!("  source: {:?}\n", &source.source)),
-                Print(TerminalUi::format_attr("ci", &source.ci)),
-                Print(TerminalUi::format_attr("repo", &source.repository)),
-                Print(TerminalUi::format_attr("sha", &source.sha)),
-                Print(TerminalUi::format_attr("branch", &source.branch)),
-                Print(TerminalUi::format_attr("commit", &source.commit_message)),
-                SetAttribute(Attribute::Reset),
-            )
-            .unwrap();
-        }
+    fn print_run_source(source: &RunSource) {
+        execute!(
+            stdout(),
+            SetAttribute(Attribute::Bold),
+            Print("\ngit info:\n"),
+            SetAttribute(Attribute::Reset),
+            Print(format!("  source: {:?}\n", &source.source)),
+            Print(TerminalUi::format_attr("ci", &source.ci)),
+            Print(TerminalUi::format_attr("repo", &source.repository)),
+            Print(TerminalUi::format_attr("sha", &source.sha)),
+            Print(TerminalUi::format_attr("branch", &source.branch)),
+            Print(TerminalUi::format_attr("commit", &source.commit_message)),
+            SetAttribute(Attribute::Reset),
+        )
+        .unwrap();
     }
 
     fn format_attr(key: &str, val: &Option<String>) -> String {

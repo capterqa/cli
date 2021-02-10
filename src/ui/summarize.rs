@@ -1,4 +1,4 @@
-use crate::{ui::TerminalUi, WorkflowRun};
+use crate::{ui::TerminalUi, WorkflowResult};
 use crossterm::{
     execute,
     style::{Attribute, Color, Print, SetAttribute, SetForegroundColor},
@@ -6,17 +6,15 @@ use crossterm::{
 use std::io::stdout;
 
 impl TerminalUi {
-    pub fn summarize(&self, workflow_runs: &Vec<WorkflowRun>) {
+    pub fn summarize(&self, workflow_runs: &Vec<WorkflowResult>) {
         // find failed assertion
         let mut assertion_results = vec![];
         workflow_runs.iter().for_each(|run| {
             run.requests.iter().for_each(|req| {
                 if let Some(res) = &req.response {
-                    if let Some(results) = &res.assertion_results {
-                        for result in results {
-                            if !result.passed {
-                                assertion_results.push((run, req, result));
-                            }
+                    for result in &res.assertion_results {
+                        if !result.passed {
+                            assertion_results.push((run, req, result));
                         }
                     }
                 }

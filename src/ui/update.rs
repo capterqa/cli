@@ -1,4 +1,4 @@
-use crate::{ui::TerminalUi, workflow::run::CallbackEvent};
+use crate::{ui::TerminalUi, workflow::workflow_result::CallbackEvent};
 use crossterm::{
     cursor, execute,
     style::{Attribute, Print, SetAttribute},

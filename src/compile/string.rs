@@ -8,6 +8,16 @@ pub struct CompiledString {
     pub masked: String,
 }
 
+/// Compile a string using mustache styled markup.
+///
+/// `My name is {{ user.name }}` with the data `{ user: { name: "Joe" } }`
+/// will compile in to `My name is Joe`.
+///
+/// You can use a mask to hide the value: `My name is {{ mask user.name }}`.
+/// This will compile in to `My name is ****`.
+///
+/// You always get back two version of the string, one masked under `.masked`,
+/// and the raw one under `.raw`.
 pub fn compile_string(value: &str, data: &Value) -> CompiledString {
     let mut raw_value = value.to_string();
     let mut masked_value = value.to_string();
