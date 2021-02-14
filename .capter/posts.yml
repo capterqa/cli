@@ -6,7 +6,7 @@ env:
 steps:
   - name: fetch all posts
     id: posts
-    url: https://dummy-api.capter.io/api/posts
+    url: https://fake-api.capter.io/api/posts
     method: GET
     assertions:
       - !assert status equal 200
@@ -25,7 +25,7 @@ steps:
 
   - name: fetch one post
     id: post
-    url: https://dummy-api.capter.io/api/posts/1
+    url: https://fake-api.capter.io/api/posts/1
     method: GET
     assertions:
       - !assert status equal 200
@@ -33,7 +33,7 @@ steps:
       - !assert body.id notMatch 5
 
   - name: fetch all posts from author
-    url: https://dummy-api.capter.io/api/posts
+    url: https://fake-api.capter.io/api/posts
     method: GET
     query:
       authorId: ${{ post.response.body.authorId }}
@@ -48,7 +48,7 @@ steps:
       - !assert body.0.authorId equal ${{ mask post.response.body.id }}
 
   - name: fetch posts by user with id 20
-    url: https://dummy-api.capter.io/api/posts
+    url: https://fake-api.capter.io/api/posts
     method: GET
     query:
       authorId: 20
@@ -57,7 +57,7 @@ steps:
       - !assert body.0.authorId isUndefined
 
   - name: fetch author with id from env vars
-    url: https://dummy-api.capter.io/api/authors/${{ env.AUTHOR_ID }}
+    url: https://fake-api.capter.io/api/authors/${{ env.AUTHOR_ID }}
     method: GET
     skip: true
     assertions:

@@ -2,21 +2,21 @@ name: errors
 steps:
   - name: 500 error
     id: posts
-    url: https://dummy-api.capter.io/api/errors/500
+    url: https://fake-api.capter.io/api/errors/500
     method: GET
     assertions:
       - !assert status equal 500
 
   - name: 404 error
     id: posts
-    url: https://dummy-api.capter.io/api/errors/404
+    url: https://fake-api.capter.io/api/errors/404
     method: GET
     assertions:
       - !assert status equal 404
 
   - name: 301 error
     id: posts
-    url: https://dummy-api.capter.io/api/errors/301
+    url: https://fake-api.capter.io/api/errors/301
     method: GET
     assertions:
       - !assert status equal 301

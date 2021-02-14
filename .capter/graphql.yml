@@ -1,5 +1,5 @@
 name: graphql-inline
-url: https://dummy-api.capter.io/api/graphql
+url: https://fake-api.capter.io/api/graphql
 steps:
   - name: fetch all posts
     id: posts

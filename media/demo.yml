@@ -1,0 +1,227 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: capter
+
+  # Export additional ENV variables
+  env:
+    recording: true
+
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 60
+
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 15
+
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+
+  # Quality
+  # 1 - 100
+  quality: 100
+
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: solid
+    title: ''
+    style:
+      border: 0px black solid
+      borderRadius: 0px
+      margin: 0px
+      background: '#161B22'
+
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: 'Monaco, Fira Code, Lucida Console, Ubuntu Mono, Monospace'
+
+  # The size of the font
+  fontSize: 13
+
+  # The height of lines
+  lineHeight: 1
+
+  # The spacing between letters
+  letterSpacing: 0
+
+  # Theme
+  theme:
+    background: '#161B22'
+    foreground: '#afafaf'
+    cursor: '#c7c7c7'
+    black: '#232628'
+    red: '#fc4384'
+    green: '#75dff2'
+    yellow: '#f1fa8c'
+    blue: '#75dff2'
+    magenta: '#ae89fe'
+    cyan: '#708387'
+    white: '#d5d5d0'
+    brightBlack: '#626566'
+    brightRed: '#ff7fac'
+    brightGreen: '#89F397'
+    brightYellow: '#EBF389'
+    brightBlue: '#75dff2'
+    brightMagenta: '#ae89fe'
+    brightCyan: '#b1c6ca'
+    brightWhite: '#f9f9f4'
+
+# Records, feel free to edit them
+records:
+  - delay: 0
+    content: '➜'
+  - delay: 0
+    content: ' '
+  - delay: 1000
+    content: 'U'
+  - delay: 45
+    content: R
+  - delay: 45
+    content: L
+  - delay: 45
+    content: '='
+  - delay: 500
+    content: 'h'
+  - delay: 45
+    content: 't'
+  - delay: 70
+    content: 't'
+  - delay: 70
+    content: 'p'
+  - delay: 70
+    content: ':'
+  - delay: 70
+    content: '/'
+  - delay: 70
+    content: '/'
+  - delay: 70
+    content: 'l'
+  - delay: 70
+    content: 'o'
+  - delay: 70
+    content: 'c'
+  - delay: 70
+    content: 'a'
+  - delay: 70
+    content: 'l'
+  - delay: 70
+    content: 'h'
+  - delay: 70
+    content: 'o'
+  - delay: 70
+    content: 's'
+  - delay: 70
+    content: 't'
+  - delay: 70
+    content: ':'
+  - delay: 70
+    content: '3'
+  - delay: 70
+    content: '0'
+  - delay: 70
+    content: '0'
+  - delay: 70
+    content: '0'
+  - delay: 500
+    content: ' '
+  - delay: 45
+    content: c
+  - delay: 45
+    content: a
+  - delay: 45
+    content: p
+  - delay: 45
+    content: t
+  - delay: 45
+    content: e
+  - delay: 45
+    content: r
+  - delay: 45
+    content: ' '
+  - delay: 70
+    content: t
+  - delay: 70
+    content: e
+  - delay: 70
+    content: s
+  - delay: 70
+    content: t
+  - delay: 200
+    content: "\r\n\e[?2004l\r"
+  - delay: 500
+    content: "\e[4m\e[2m\r\n.capter/products.yml\r\n\r\n\e[0m\e7\e[38;2;50;50;50m\e[48;5;11m RUNS \e[0m products → fetch all products\r\n\r\n\e[1mWorkflows: \e[0m\e[2m0 of 1 total\e[0m\r\n\e[1mRequests: \e[0m\e[2m0 of 2 total\e[0m\r\n\e[1mTime: \e[0m\e[2m0.0 s\r\n\e[0m"
+  - delay: 600
+    content: "\e[5F\e[J\e[38;2;50;50;50m\e[48;5;10m PASS \e[0m products → fetch all products\r\n\e7\e[38;2;50;50;50m\e[48;5;11m RUNS \e[0m products → fetch first product\r\n\r\n\e[1mWorkflows: \e[0m\e[2m0 of 1 total\e[0m\r\n\e[1mRequests: \e[0m\e[38;5;10m1 passed\e[0m\e[2m, 2 total\e[0m\r\n\e[1mTime: \e[0m\e[2m0.9 s\r\n\e[0m"
+  - delay: 500
+    content: "\e[5F\e[J\e[38;2;50;50;50m\e[48;5;10m PASS \e[0m products → fetch first product\r\n\r\n\e[1mWorkflows: \e[0m\e[38;5;10m1 passed\e[0m\e[2m, 1 total\e[0m\r\n\e[1mRequests: \e[0m\e[38;5;10m2 passed\e[0m\e[2m, 2 total\e[0m\r\n\e[1mTime: \e[0m\e[2m1.8 s\r\n\e[0m"
+  - delay: 500
+    content: "\n➜ "
+  - delay: 5000
+    content: 'T'
+  - delay: 45
+    content: 'h'
+  - delay: 25
+    content: 'a'
+  - delay: 25
+    content: 't'
+  - delay: 50
+    content: "'"
+  - delay: 25
+    content: 's'
+  - delay: 25
+    content: ' '
+  - delay: 50
+    content: 'i'
+  - delay: 75
+    content: 't'
+  - delay: 75
+    content: '!'
+  - delay: 25
+    content: ' '
+  - delay: 2000
+    content: ':'
+  - delay: 75
+    content: ')'
