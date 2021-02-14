@@ -9,9 +9,9 @@ steps:
     url: https://fake-api.capter.io/api/posts
     method: GET
     assertions:
-      - !!assert status equal 200
+      - !assert status equal 200
       - !assert headers.content-type contains application/json
-      - !!assert duration isBelow 1000
+      - !assert duration isBelow 1000
       - !assert duration isAbove ${{ env.DURATION }}
       - !assert body isArray
       - !assert body hasLength 50
