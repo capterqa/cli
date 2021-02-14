@@ -17,7 +17,7 @@ Capter is a lightweight **end-to-end** testing tool for APIs. It's language agno
 
 ## How it works:
 
-Create your workflows in a folder called `.capter/`:
+Create a workflow file in a `.capter` folder:
 
 ```yaml
 # .capter/products.yml
@@ -26,14 +26,12 @@ name: products
 steps:
   - name: fetch all products
     id: products
-    # use the URL environment variable to decide where to run the test
     url: ${{ env.URL }}/api/products
     assertions:
       - !assert status equal 200
       - !assert body isArray
 
   - name: fetch first product
-    # use the previous response to fetch the first product
     url: ${{ env.URL }}/api/posts/${{ products.response.body.0.id }}
     assertions:
       - !assert body.id equal ${{ products.response.body.0.id }}
@@ -41,11 +39,24 @@ steps:
 
 Then run the CLI:
 
+```sh
+URL=http://localhost:3000 capter test
+```
+
 ![CLI](media/demo.gif)
 
 ## Getting started
 
 Follow the instructions in the documentation to get started:
 
-- [Installation](https://docs.capter.io/docs/installation)
-- [Gettings started](https://docs.capter.io/docs/getting-started)
+- [Installation](https://docs.capter.io/cli/guide/installation)
+- [Gettings started](https://docs.capter.io/cli/guide/getting-started)
+
+## API
+
+- [CLI reference](https://docs.capter.io/cli/reference/cli)
+- [Workflow reference](https://docs.capter.io/cli/reference/workflow)
+
+# License
+
+The Capter CLI is provided under the [MIT License](http://http//opensource.org/licenses/mit-license.php). See LICENSE for details.
