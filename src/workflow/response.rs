@@ -108,7 +108,6 @@ impl ResponseData {
 
         // loop through the assertions and run them
         for assertion_string in assertions {
-            let WorkflowConfigAssertion::assert(assertion_string) = assertion_string;
             let assertion_data = AssertionData {
                 status: self.status,
                 duration: self.response_time,
@@ -116,7 +115,7 @@ impl ResponseData {
                 headers: self.headers.to_owned(),
             };
 
-            let assertion = Assertion::from_str(assertion_string, workflow_data);
+            let assertion = Assertion::from_assertion(assertion_string, workflow_data);
             let result = assertion.assert(&assertion_data);
 
             assertions_results.push(result);

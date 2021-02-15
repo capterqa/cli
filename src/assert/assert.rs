@@ -1,6 +1,7 @@
 use crate::{
     assert::ValueAssertions,
     compile::{compile_string, CompiledString},
+    workflow::WorkflowConfigAssertion,
 };
 use crate::{assert::ASSERTION_TYPES, utils::exit_with_code};
 use serde::Serialize;
@@ -13,6 +14,9 @@ use serde_json::{json, Value};
 /// can then be used to assert "data" by calling `.assert(data)`.
 pub struct Assertion {
     assertion_string: CompiledString,
+    /// inverts the test if true
+    /// `expected a to NOT be b`
+    not: bool,
 }
 
 /// The result of an assertion. Can be serialized to JSON
@@ -50,9 +54,19 @@ pub struct AssertionTest {
 impl Assertion {
     /// Create a new Assertion from a string.
     /// The format of the string is `status equal 200`,
-    pub fn from_str(assertion_string: &str, workflow_data: &Value) -> Assertion {
-        let assertion_string = compile_string(&assertion_string, workflow_data);
-        Assertion { assertion_string }
+    pub fn from_assertion(
+        assertion_string: &WorkflowConfigAssertion,
+        workflow_data: &Value,
+    ) -> Assertion {
+        let (not, assertion_string) = match assertion_string {
+            WorkflowConfigAssertion::assert(val) => (false, compile_string(val, workflow_data)),
+            WorkflowConfigAssertion::assert_not(val) => (true, compile_string(val, workflow_data)),
+        };
+
+        Assertion {
+            not,
+            assertion_string,
+        }
     }
 
     /// Assert on the data passed in. Returns
@@ -67,7 +81,7 @@ impl Assertion {
         let data = assertion_data_json.pointer(&path).unwrap_or(&Value::Null);
 
         let assert_fn = ValueAssertions::get(&assertion.test);
-        let result = assert_fn(data, &assertion.value);
+        let result = assert_fn(data, &assertion.value, self.not);
         let passed = result.is_none();
 
         let is_masked = self.assertion_string.raw != self.assertion_string.masked;
@@ -160,11 +174,11 @@ mod tests {
     #[test]
     fn test_assertion() {
         let data = json!({
-            "env": { "name": "Text McTest" }
+            "env": { "name": "Test McTest" }
         });
         let assertion_data = AssertionData {
             body: json!({
-                "user": { "name": "Text McTest" },
+                "user": { "name": "Test McTest" },
             }),
             headers: json!({
                 "content-type": "application/json",
@@ -173,19 +187,38 @@ mod tests {
             status: Some(200),
         };
 
-        let assertion = Assertion::from_str("body.user.name equal ${{ env.name }}", &data);
+        let assertion = Assertion::from_assertion(
+            &WorkflowConfigAssertion::assert("body.user.name equal ${{ env.name }}".to_string()),
+            &data,
+        );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
-        let assertion = Assertion::from_str("headers.nope isUndefined", &data);
+        let assertion = Assertion::from_assertion(
+            &WorkflowConfigAssertion::assert_not("body.user.name equal bad value".to_string()),
+            &data,
+        );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
-        let assertion = Assertion::from_str("body isNotEmpty", &data);
+        let assertion = Assertion::from_assertion(
+            &WorkflowConfigAssertion::assert("headers.nope isUndefined".to_string()),
+            &data,
+        );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
-        let assertion = Assertion::from_str("body.name equal ${{ mask env.name }}", &data);
+        let assertion = Assertion::from_assertion(
+            &WorkflowConfigAssertion::assert("body isNotEmpty".to_string()),
+            &data,
+        );
+        let result = assertion.assert(&assertion_data);
+        assert_eq!(result.passed, true);
+
+        let assertion = Assertion::from_assertion(
+            &WorkflowConfigAssertion::assert("body.name equal ${{ mask env.name }}".to_string()),
+            &data,
+        );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, false);
         assert_eq!(result.message, Some("Hidden because of mask".to_string()));

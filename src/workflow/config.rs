@@ -46,6 +46,7 @@ pub struct WorkflowConfigStep {
 #[allow(non_camel_case_types)]
 pub enum WorkflowConfigAssertion {
     assert(String),
+    assert_not(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,6 +95,10 @@ impl WorkflowConfig {
     }
 
     pub fn from_yaml(yaml: String) -> Result<WorkflowConfig, serde_yaml::Error> {
+        // we use a custom tag !!assert, which yaml-serde currently can't parse
+        // so we need to replace it with !assert_not manually before parsing
+        let yaml = str::replace(&yaml, "!!assert", "!assert_not");
+
         serde_yaml::from_str(&yaml)
     }
 }

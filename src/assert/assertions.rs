@@ -5,7 +5,7 @@ use serde_json::Value;
 pub struct ValueAssertions {}
 
 impl ValueAssertions {
-    pub fn get(name: &str) -> fn(&Value, &Value) -> Option<String> {
+    pub fn get(name: &str) -> fn(&Value, &Value, bool) -> Option<String> {
         match name {
             "equal" => assert_equal,
             "contains" => assert_contains,
@@ -26,19 +26,22 @@ impl ValueAssertions {
     }
 }
 
-fn assert_equal(a: &Value, b: &Value) -> Option<String> {
-    if value_to_string(a).eq(&value_to_string(b)) {
+fn assert_equal(a: &Value, b: &Value, not: bool) -> Option<String> {
+    let result = value_to_string(a).eq(&value_to_string(b));
+
+    if did_pass(result, not) {
         return None;
     }
 
     Some(format!(
-        "expected {} to equal {}",
+        "expected {} {} equal {}",
         value_to_string(a),
-        value_to_string(b)
+        to(not),
+        value_to_string(b),
     ))
 }
 
-fn assert_contains(a: &Value, b: &Value) -> Option<String> {
+fn assert_contains(a: &Value, b: &Value, not: bool) -> Option<String> {
     let a_string = value_to_string(a);
     let b_string = value_to_string(b);
 
@@ -46,30 +49,32 @@ fn assert_contains(a: &Value, b: &Value) -> Option<String> {
         return None;
     }
 
-    Some(format!("expected {} to contain {}", a, b))
+    Some(format!("expected {} {} contain {}", a, to(not), b))
 }
 
-fn assert_is_below(a: &Value, b: &Value) -> Option<String> {
+fn assert_is_below(a: &Value, b: &Value, not: bool) -> Option<String> {
     if let (Some(a_number), Some(b_number)) = (value_to_number(a), value_to_number(b)) {
-        if a_number < b_number {
+        let result = a_number < b_number;
+        if did_pass(result, not) {
             return None;
         }
     }
 
-    Some(format!("expected {} to be below {}", a, b))
+    Some(format!("expected {} {} be below {}", a, to(not), b))
 }
 
-fn assert_is_above(a: &Value, b: &Value) -> Option<String> {
+fn assert_is_above(a: &Value, b: &Value, not: bool) -> Option<String> {
     if let (Some(a_number), Some(b_number)) = (value_to_number(a), value_to_number(b)) {
-        if a_number > b_number {
+        let result = a_number > b_number;
+        if did_pass(result, not) {
             return None;
         }
     }
 
-    Some(format!("expected {} to be above {}", a, b))
+    Some(format!("expected {} {} be above {}", a, to(not), b))
 }
 
-fn assert_is_array(a: &Value, _b: &Value) -> Option<String> {
+fn assert_is_array(a: &Value, _b: &Value, not: bool) -> Option<String> {
     if a.is_array() {
         return None;
     }
@@ -81,7 +86,7 @@ fn assert_is_array(a: &Value, _b: &Value) -> Option<String> {
     ))
 }
 
-fn assert_has_length(a: &Value, b: &Value) -> Option<String> {
+fn assert_has_length(a: &Value, b: &Value, not: bool) -> Option<String> {
     // try array
     if let (Some(number), Some(array)) = (value_to_number(b), a.as_array()) {
         if array.len() as u32 == number {
@@ -112,7 +117,7 @@ fn assert_has_length(a: &Value, b: &Value) -> Option<String> {
     ))
 }
 
-fn assert_is_not_empty(a: &Value, _b: &Value) -> Option<String> {
+fn assert_is_not_empty(a: &Value, _b: &Value, not: bool) -> Option<String> {
     if a.is_array() {
         if a.as_array().unwrap().len() > 0 {
             return Some(format!("expected array to not be empty"));
@@ -125,7 +130,7 @@ fn assert_is_not_empty(a: &Value, _b: &Value) -> Option<String> {
     None
 }
 
-fn assert_not_equal(a: &Value, b: &Value) -> Option<String> {
+fn assert_not_equal(a: &Value, b: &Value, not: bool) -> Option<String> {
     if value_to_string(a).ne(&value_to_string(b)) {
         return None;
     }
@@ -133,7 +138,7 @@ fn assert_not_equal(a: &Value, b: &Value) -> Option<String> {
     Some(format!("expected {} to not equal {}", a, b))
 }
 
-fn assert_match(a: &Value, b: &Value) -> Option<String> {
+fn assert_match(a: &Value, b: &Value, not: bool) -> Option<String> {
     let a_string = &value_to_string(a);
     let b_string = &value_to_string(b);
     let search = Regex::new(b_string).unwrap();
@@ -146,7 +151,7 @@ fn assert_match(a: &Value, b: &Value) -> Option<String> {
     Some(format!("expected {} to match {}", a, b))
 }
 
-fn assert_not_match(a: &Value, b: &Value) -> Option<String> {
+fn assert_not_match(a: &Value, b: &Value, not: bool) -> Option<String> {
     let a_string = &value_to_string(a);
     let b_string = &value_to_string(b);
     let search = Regex::new(b_string).unwrap();
@@ -158,7 +163,7 @@ fn assert_not_match(a: &Value, b: &Value) -> Option<String> {
     Some(format!("expected {} to not match {}", a, b))
 }
 
-fn assert_is_undefined(a: &Value, _b: &Value) -> Option<String> {
+fn assert_is_undefined(a: &Value, _b: &Value, not: bool) -> Option<String> {
     if a.is_null() {
         return None;
     }
@@ -209,4 +214,22 @@ fn value_type(v: &Value) -> String {
         return "object".to_string();
     }
     return "unknown".to_string();
+}
+
+fn verb(is: &str, not: &str, is_inverted: bool) -> String {
+    match is_inverted {
+        true => not.to_string(),
+        false => is.to_string(),
+    }
+}
+
+fn to(is_inverted: bool) -> String {
+    verb("to", "to not", is_inverted)
+}
+
+fn did_pass(result: bool, not: bool) -> bool {
+    match not {
+        true => !result,
+        false => result,
+    }
 }
