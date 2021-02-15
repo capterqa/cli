@@ -5,18 +5,18 @@ steps:
     url: https://fake-api.capter.io/api/errors/500
     method: GET
     assertions:
-      - !assert status equal 500
+      - !assert status to_equal 500
 
   - name: 404 error
     id: posts
     url: https://fake-api.capter.io/api/errors/404
     method: GET
     assertions:
-      - !assert status equal 404
+      - !assert status to_equal 404
 
   - name: 301 error
     id: posts
     url: https://fake-api.capter.io/api/errors/301
     method: GET
     assertions:
-      - !assert status equal 301
+      - !assert status to_equal 301

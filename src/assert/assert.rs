@@ -1,9 +1,9 @@
+use crate::utils::exit_with_code;
 use crate::{
-    assert::ValueAssertions,
+    assert::{ValueAssertions, ASSERTION_TYPES},
     compile::{compile_string, CompiledString},
     workflow::WorkflowConfigAssertion,
 };
-use crate::{assert::ASSERTION_TYPES, utils::exit_with_code};
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -41,7 +41,7 @@ pub struct AssertionData {
 /// used by the assert methods to assert.
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct AssertionTest {
-    /// `equals`, `isAbove` etc.
+    /// `to_equal`, `to_be_above` etc.
     /// See `ASSERTION_TYPES`.
     pub test: String,
     /// The key we want to assert on.
@@ -49,6 +49,8 @@ pub struct AssertionTest {
     pub property: String,
     /// The value we want the property to match.
     pub value: serde_json::Value,
+    /// true if the test is inverted
+    pub not: bool,
 }
 
 impl Assertion {
@@ -74,7 +76,7 @@ impl Assertion {
     /// to the user or sent to the webhook.
     pub fn assert(&self, assertion_data: &AssertionData) -> AssertionResultData {
         let assertion_data_json = json!(&assertion_data);
-        let assertion = parse_assertion_string(&self.assertion_string.raw);
+        let assertion = parse_assertion_string(&self.assertion_string.raw, self.not);
 
         // create a path to the property and get the data
         let path = format!("/{}", assertion.property.replace(".", "/"));
@@ -98,7 +100,7 @@ impl Assertion {
 
     /// Create a masked version of the `AssertionTest`.
     pub fn get_masked_assertion_test(&self) -> AssertionTest {
-        parse_assertion_string(&self.assertion_string.masked)
+        parse_assertion_string(&self.assertion_string.masked, self.not)
     }
 }
 
@@ -107,7 +109,7 @@ impl Assertion {
 /// It splits the string up and tries to figure out
 /// the different parts of an `AssertionTest`. Will exit
 /// if it can't parse the input.
-pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
+pub fn parse_assertion_string(assertion_string: &str, not: bool) -> AssertionTest {
     let mut parts = assertion_string.split(' ').collect::<Vec<&str>>();
 
     // pull the property from the array
@@ -120,6 +122,7 @@ pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
             test: parts[0].to_owned(),
             property: property.to_owned(),
             value: Value::Null,
+            not,
         };
     }
 
@@ -129,6 +132,7 @@ pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
             test: parts[1].to_owned(),
             property: format!("{}.{}", property, parts[0]),
             value: Value::Null,
+            not,
         };
     }
 
@@ -142,6 +146,7 @@ pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
             test: parts[0].to_owned(),
             property: property.to_owned(),
             value: json!(value),
+            not,
         };
     };
 
@@ -156,6 +161,7 @@ pub fn parse_assertion_string(assertion_string: &str) -> AssertionTest {
             test: parts[1].to_owned(),
             property: format!("{}.{}", property, parts[0]),
             value: json!(value),
+            not,
         };
     }
     exit_with_code(
@@ -188,35 +194,35 @@ mod tests {
         };
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("body.user.name equal ${{ env.name }}".to_string()),
+            &WorkflowConfigAssertion::assert("body.user.name to_equal ${{ env.name }}".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert_not("body.user.name equal bad value".to_string()),
+            &WorkflowConfigAssertion::assert_not("body.user.name to_equal bad value".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("headers.nope isUndefined".to_string()),
+            &WorkflowConfigAssertion::assert("headers.nope to_be_undefined".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("body isNotEmpty".to_string()),
+            &WorkflowConfigAssertion::assert_not("body to_be_empty".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("body.name equal ${{ mask env.name }}".to_string()),
+            &WorkflowConfigAssertion::assert("body.name to_equal ${{ mask env.name }}".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);

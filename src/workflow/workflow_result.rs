@@ -169,9 +169,9 @@ mod tests {
                 id: test
                 url: {url}/test
                 assertions:
-                  - !assert status equal 200
-                  - !assert body.0.id equal 1
-                  - !assert body.5.id equal 5
+                  - !assert status to_equal 200
+                  - !assert body.0.id to_equal 1
+                  - !assert body.5.id to_equal 5
               - name: step 2
                 url: {url}/test/{path}
                 query:
@@ -181,8 +181,8 @@ mod tests {
                 body:
                   id: {path}
                 assertions:
-                  - !assert status equal 200
-                  - !assert body.hello equal world
+                  - !assert status to_equal 200
+                  - !assert body.hello to_equal world
             ",
             url = url,
             path = "${{ test.response.body.0.id }}"

@@ -1,7 +1,7 @@
 pub mod assert;
 pub mod assertions;
-pub mod types;
+pub mod utils;
+pub mod value_assertions;
 
 pub use assert::{Assertion, AssertionData, AssertionResultData};
-pub use assertions::ValueAssertions;
-pub use types::ASSERTION_TYPES;
+pub use value_assertions::{ValueAssertions, ASSERTION_TYPES};

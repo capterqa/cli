@@ -237,10 +237,10 @@ mod tests {
         let mut response = ResponseData::from_result(result, 1000);
 
         let assertions = vec![
-            WorkflowConfigAssertion::assert("status equal 200".to_string()),
-            WorkflowConfigAssertion::assert("body.hello equal world".to_string()),
-            WorkflowConfigAssertion::assert("headers.test-header equal test-value".to_string()),
-            WorkflowConfigAssertion::assert("duration equal 500".to_string()),
+            WorkflowConfigAssertion::assert("status to_equal 200".to_string()),
+            WorkflowConfigAssertion::assert("body.hello to_equal world".to_string()),
+            WorkflowConfigAssertion::assert("headers.test-header to_equal test-value".to_string()),
+            WorkflowConfigAssertion::assert("duration to_equal 500".to_string()),
         ];
 
         let assertion_results = response.assert(&assertions, &json!({}));
