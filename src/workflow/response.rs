@@ -108,7 +108,6 @@ impl ResponseData {
 
         // loop through the assertions and run them
         for assertion_string in assertions {
-            let WorkflowConfigAssertion::assert(assertion_string) = assertion_string;
             let assertion_data = AssertionData {
                 status: self.status,
                 duration: self.response_time,
@@ -116,7 +115,7 @@ impl ResponseData {
                 headers: self.headers.to_owned(),
             };
 
-            let assertion = Assertion::from_str(assertion_string, workflow_data);
+            let assertion = Assertion::from_assertion(assertion_string, workflow_data);
             let result = assertion.assert(&assertion_data);
 
             assertions_results.push(result);
@@ -238,10 +237,10 @@ mod tests {
         let mut response = ResponseData::from_result(result, 1000);
 
         let assertions = vec![
-            WorkflowConfigAssertion::assert("status equal 200".to_string()),
-            WorkflowConfigAssertion::assert("body.hello equal world".to_string()),
-            WorkflowConfigAssertion::assert("headers.test-header equal test-value".to_string()),
-            WorkflowConfigAssertion::assert("duration equal 500".to_string()),
+            WorkflowConfigAssertion::assert("status to_equal 200".to_string()),
+            WorkflowConfigAssertion::assert("body.hello to_equal world".to_string()),
+            WorkflowConfigAssertion::assert("headers.test-header to_equal test-value".to_string()),
+            WorkflowConfigAssertion::assert("duration to_equal 500".to_string()),
         ];
 
         let assertion_results = response.assert(&assertions, &json!({}));
