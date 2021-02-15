@@ -5,7 +5,7 @@ use utils::{did_pass, to};
 pub fn to_have_length(a: &Value, b: &Value, not: bool) -> Option<String> {
     // try array
     if let (Some(number), Some(array)) = (utils::to_number(b), a.as_array()) {
-        let result = array.len() as u32 == number;
+        let result = array.len() as f64 == number;
         if utils::did_pass(result, not) {
             return None;
         }
@@ -20,7 +20,7 @@ pub fn to_have_length(a: &Value, b: &Value, not: bool) -> Option<String> {
 
     // try string
     if let (Some(number), Some(string)) = (utils::to_number(b), a.as_str()) {
-        let result = string.len() as u32 == number;
+        let result = string.len() as f64 == number;
         if did_pass(result, not) {
             return None;
         }

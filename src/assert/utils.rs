@@ -1,10 +1,10 @@
 use serde_json::Value;
 
-pub fn to_number(v: &Value) -> Option<u32> {
-    if v.is_number() {
-        return Some(v.as_u64().unwrap() as u32);
+pub fn to_number(v: &Value) -> Option<f64> {
+    if let Some(val) = v.as_f64() {
+        return Some(val);
     }
-    if let Ok(number) = v.as_str().unwrap_or("").parse::<u32>() {
+    if let Ok(number) = v.as_str().unwrap_or("").parse::<f64>() {
         return Some(number);
     }
     None
