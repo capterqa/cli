@@ -4,7 +4,7 @@
   </a>
 </p>
 
-# Capter CLI
+# @capterqa/cli
 
 ![test-build](https://github.com/capterqa/cli/workflows/test-build/badge.svg)
 [![codecov](https://codecov.io/gh/capterqa/cli/branch/alpha/graph/badge.svg?token=DAUCAH1MWW)](https://codecov.io/gh/capterqa/cli)
@@ -47,6 +47,18 @@ URL=http://localhost:3000 capter test
 ## Demo
 
 ![CLI](/media/demo.gif)
+
+## Installation
+
+```sh
+# npm
+npm i @capterqa/cli --save-dev
+
+# yarn
+yarn add @capterqa/cli --dev
+```
+
+> During the alpha, you need to add `GITHUB_TOKEN` to `.env` for the CLI install.
 
 ## Getting started
 

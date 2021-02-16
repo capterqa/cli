@@ -24,7 +24,19 @@ jobs:
           release_name: v${{ env.VERSION }}
           tag_name: v${{ env.VERSION }}
           body: |
-            ### Installation
+            ## Installation
+
+            ### NPM
+
+            ```console
+            # npm
+            npm i @capterqa/cli --save-dev
+
+            # yarn
+            yarn add @capterqa/cli --dev
+            ```
+
+            ### Cargo
 
             ```console
             $ cargo install capter --vers ${{ env.VERSION }}
