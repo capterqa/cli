@@ -1,0 +1,31 @@
+{
+  "name": "@capterqa/cli",
+  "version": "1.0.0-alpha.14",
+  "description": "Capter is a lightweight end-to-end testing tool for APIs.",
+  "main": "index.js",
+  "author": "capter.io <filip@capter.io>",
+  "license": "MIT",
+  "bin": {
+    "capter": "run.js"
+  },
+  "scripts": {
+    "postinstall": "node ./install.js"
+  },
+  "files": [
+    "binary-install.js",
+    "binary.js",
+    "install.js",
+    "run.js"
+  ],
+  "repository": {
+    "url": "https://github.com/capterqa/cli"
+  },
+  "homepage": "https://github.com/capterqa/cli",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "console.table": "^0.10.0",
+    "dotenv": "^8.2.0",
+    "find-config": "^1.0.0",
+    "rimraf": "^3.0.2"
+  }
+}
