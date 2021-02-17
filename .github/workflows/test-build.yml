@@ -68,6 +68,9 @@ jobs:
 
       - run: echo $VERSION
 
+      - uses: actions/setup-node@v2
+      - run: cd ./installers/npm && npm version $VERSION
+
       - name: commit new version
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
