@@ -78,6 +78,7 @@ impl WorkflowResult {
 
             if step.skip.is_some() {
                 callback(CallbackEvent::StepSkipped(config, step_index));
+                step_index += 1;
                 continue;
             }
 
