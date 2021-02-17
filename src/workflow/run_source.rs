@@ -1,3 +1,4 @@
+use crate::CliOptions;
 use last_git_commit::LastGitCommit;
 use serde::Serialize;
 
@@ -30,7 +31,7 @@ pub struct RunSource {
 }
 
 impl RunSource {
-    pub fn new(skip_git: bool) -> RunSource {
+    pub fn new(cli_option: &CliOptions) -> RunSource {
         let ci_info = ci_info::get();
 
         let mut source = RunSource {
@@ -38,7 +39,7 @@ impl RunSource {
         };
 
         // only collect git information if we're allowed to
-        if skip_git == false {
+        if cli_option.skip_git == false {
             let lgc = LastGitCommit::new().build();
             if let Ok(lgc) = lgc {
                 source.branch = Some(lgc.branch().clone());

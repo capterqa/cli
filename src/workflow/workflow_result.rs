@@ -1,3 +1,4 @@
+use crate::CliOptions;
 use crate::{
     assert::AssertionResultData,
     workflow::{Request, RequestData, WorkflowConfig},
@@ -39,6 +40,7 @@ impl WorkflowResult {
     ///
     /// Use the callback argument to get continous updates from the run.
     pub fn from_config(
+        cli_options: &CliOptions,
         config: &WorkflowConfig,
         mut callback: impl FnMut(CallbackEvent),
     ) -> Result<WorkflowResult, Box<dyn std::error::Error>> {
@@ -82,7 +84,7 @@ impl WorkflowResult {
                 continue;
             }
 
-            let mut request = Request::new(config, step_index, &workflow_data);
+            let mut request = Request::new(config, step_index, &workflow_data, cli_options.timeout);
 
             // add it to workflow_data if id is set
             if let Some(id) = &step.id {
@@ -192,7 +194,8 @@ mod tests {
 
         match workflow_config {
             Ok(workflow_config) => {
-                let result = WorkflowResult::from_config(&workflow_config, |_| {});
+                let result =
+                    WorkflowResult::from_config(&CliOptions::default(), &workflow_config, |_| {});
                 let result = result.unwrap();
                 let response1 = result.requests[0].response.to_owned().unwrap();
                 let response2 = result.requests[1].response.to_owned().unwrap();

@@ -12,6 +12,22 @@ use ureq;
 use utils::exit_with_code;
 use workflow::{workflow_result::WorkflowResult, RunSource, WorkflowConfig};
 
+pub struct CliOptions {
+    skip_git: bool,
+    is_debug: bool,
+    timeout: u64,
+}
+
+impl Default for CliOptions {
+    fn default() -> CliOptions {
+        CliOptions {
+            skip_git: false,
+            is_debug: false,
+            timeout: 30,
+        }
+    }
+}
+
 fn main() {
     let yml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yml)
@@ -33,13 +49,21 @@ fn main() {
         let dry_run = matches.is_present("dry-run");
         // stops the cli from collecting data (branch, commit message) from git
         let skip_git = matches.is_present("skip-git");
+        // the timeout for requests
+        let timeout = matches.value_of("timeout");
+
+        let cli_options = CliOptions {
+            skip_git,
+            is_debug,
+            timeout: timeout.unwrap_or("30").parse().unwrap_or(30),
+        };
 
         // we'll collect all runs in this array so we can post it
         // to the webhook after the run is complete
         let mut workflow_runs: Vec<WorkflowResult> = vec![];
 
         // collect the source information
-        let source = RunSource::new(skip_git);
+        let source = RunSource::new(&cli_options);
 
         let entries = match globwalk::glob(tests_glob) {
             Ok(res) => res,
@@ -58,7 +82,7 @@ fn main() {
             .collect();
 
         // this sets up our UI
-        let mut terminal_ui = TerminalUi::new(&configs, &source, is_debug);
+        let mut terminal_ui = TerminalUi::new(&configs, &source, &cli_options);
 
         let mut passed = true;
 
@@ -73,9 +97,10 @@ fn main() {
             // run the workflow and use the callback to update the UI on events like
             // new step, step completed etc.
             // we get `RequestData` back, which is the results of of this workflow
-            let workflow_result = WorkflowResult::from_config(&workflow_config, |event| {
-                terminal_ui.update(event);
-            });
+            let workflow_result =
+                WorkflowResult::from_config(&cli_options, &workflow_config, |event| {
+                    terminal_ui.update(event);
+                });
 
             if let Ok(workflow_run) = workflow_result {
                 if workflow_run.passed == false {

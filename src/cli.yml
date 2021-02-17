@@ -20,6 +20,11 @@ subcommands:
             help: post the run to a url after completion
             value_name: URL
             takes_value: true
+        - timeout:
+            long: timeout
+            help: how long to wait for a connection
+            value_name: SECONDS
+            takes_value: true
         - skip-git:
             long: skip-git
             help: don't pass any git information to the webhook

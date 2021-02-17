@@ -35,6 +35,7 @@ pub struct Request {
     query: CompiledValue,
     body: CompiledValue,
     response: Option<ResponseData>,
+    timeout: u64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -60,6 +61,7 @@ impl Request {
         workflow_config: &WorkflowConfig,
         step_index: i32,
         workflow_data: &Value,
+        timeout: u64,
     ) -> Request {
         let step = workflow_config
             .steps
@@ -82,6 +84,7 @@ impl Request {
             body,
             headers,
             step_index,
+            timeout,
             method: method.unwrap_or("GET".to_string()),
             created_at: Utc::now(),
             step: step.to_owned(),
@@ -95,7 +98,7 @@ impl Request {
     /// be called before doing any assertions.
     pub fn call(&mut self) -> Option<ResponseData> {
         let data = self.data();
-        let mut request = HttpRequest::new(data.url, data.method);
+        let mut request = HttpRequest::new(data.url, data.method, self.timeout);
 
         // add query
         if let Some(query) = &data.query {

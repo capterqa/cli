@@ -1,6 +1,9 @@
 use serde_json::json;
 use serde_yaml::Value;
-use std::time::Instant;
+use std::{
+    env,
+    time::{Duration, Instant},
+};
 
 /// Utility to make http requests.
 /// Wrapper on top of ureq.
@@ -13,8 +16,14 @@ pub struct HttpRequest {
 impl HttpRequest {
     /// Create a new HttpRequest. You can add headers, query and body to it
     /// before calling `.call()`.
-    pub fn new(url: String, method: String) -> HttpRequest {
-        let request = ureq::request(&method, &url);
+    pub fn new(url: String, method: String, timeout: u64) -> HttpRequest {
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(Duration::from_secs(timeout))
+            .build();
+        let request = agent.request(&method, &url).set(
+            "User-Agent",
+            &format!("capter/{}", env!("CARGO_PKG_VERSION")),
+        );
 
         HttpRequest {
             request,
@@ -102,7 +111,7 @@ mod tests {
             .with_body(r#"{"hello": "world"}"#)
             .create();
 
-        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into());
+        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into(), 30);
         let response = request.call();
 
         match response {
@@ -126,7 +135,7 @@ mod tests {
             .with_status(200)
             .create();
 
-        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into());
+        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into(), 30);
 
         let yaml = indoc! {"
             ---
@@ -164,7 +173,7 @@ mod tests {
             .with_status(200)
             .create();
 
-        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into());
+        let mut request = HttpRequest::new(format!("{}/test", url), "GET".into(), 30);
 
         let yaml = indoc! {"
             ---

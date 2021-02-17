@@ -1,4 +1,7 @@
-use crate::workflow::{run_source::RunSource, WorkflowConfig};
+use crate::{
+    workflow::{run_source::RunSource, WorkflowConfig},
+    CliOptions,
+};
 use crossterm::{
     execute,
     style::{Attribute, Print, SetAttribute},
@@ -25,13 +28,17 @@ pub struct TerminalUi {
 }
 
 impl TerminalUi {
-    pub fn new(configs: &Vec<WorkflowConfig>, source: &RunSource, is_debug: bool) -> TerminalUi {
-        let is_tty = match is_debug {
+    pub fn new(
+        configs: &Vec<WorkflowConfig>,
+        source: &RunSource,
+        cli_options: &CliOptions,
+    ) -> TerminalUi {
+        let is_tty = match cli_options.is_debug {
             true => false,
             false => stdout().is_tty(),
         };
 
-        if is_debug {
+        if cli_options.is_debug {
             TerminalUi::print_run_source(source);
         }
 
@@ -53,7 +60,7 @@ impl TerminalUi {
             skipped_workflows_count: 0,
             workflow_count,
             step_count,
-            is_debug,
+            is_debug: cli_options.is_debug,
         }
     }
 
