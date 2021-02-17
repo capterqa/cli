@@ -288,3 +288,41 @@ fn get_url(
         Some(&format!("No url found for step: `{}`", step.name)),
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indoc::indoc;
+    use serde_json::json;
+
+    #[test]
+    fn test_method_in_url() {
+        let yaml = indoc! {"
+            ---
+            name: test
+            steps:
+              - name: step 1
+                url: POST ${{ env.URL }}/users
+                assertions:
+                  - !expect status to_equal 200
+              - name: step 2
+                url: ${{ env.URL }}/users
+                method: POST
+                assertions:
+                  - !expect status to_equal 200
+        "};
+        let workflow_config = WorkflowConfig::from_yaml(yaml.into()).unwrap();
+        let workflow_data = json!({ "env": { "URL": "https://fake-api.cater.io" }});
+
+        let step1 = workflow_config.steps[0].clone();
+        let step2 = workflow_config.steps[1].clone();
+
+        let (url, method) = get_url(&step1, &workflow_data, &workflow_config);
+        assert_eq!(url.raw, "https://fake-api.cater.io/users");
+        assert_eq!(method, Some("POST".to_string()));
+
+        let (url, method) = get_url(&step2, &workflow_data, &workflow_config);
+        assert_eq!(url.raw, "https://fake-api.cater.io/users");
+        assert_eq!(method, None);
+    }
+}
