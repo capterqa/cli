@@ -1,6 +1,6 @@
 use serde_json::json;
 use serde_yaml::Value;
-use std::time::Instant;
+use std::{env, time::Instant};
 
 /// Utility to make http requests.
 /// Wrapper on top of ureq.
@@ -14,7 +14,10 @@ impl HttpRequest {
     /// Create a new HttpRequest. You can add headers, query and body to it
     /// before calling `.call()`.
     pub fn new(url: String, method: String) -> HttpRequest {
-        let request = ureq::request(&method, &url);
+        let request = ureq::request(&method, &url).set(
+            "User-Agent",
+            &format!("capter/{}", env!("CARGO_PKG_VERSION")),
+        );
 
         HttpRequest {
             request,
