@@ -7,10 +7,10 @@ use crate::{
 use serde::Serialize;
 use serde_json::{json, Value};
 
-/// Assertion turns an assertion string from the yaml workflows
+/// Assertion turns an expection string from the yaml workflows
 /// into a real assertion that can be used on a payload.
 ///
-/// `- !assert status equal {{ env.STATUS }}` will be parsed and
+/// `- !expect status equal {{ env.STATUS }}` will be parsed and
 /// can then be used to assert "data" by calling `.assert(data)`.
 pub struct Assertion {
     assertion_string: CompiledString,
@@ -61,8 +61,8 @@ impl Assertion {
         workflow_data: &Value,
     ) -> Assertion {
         let (not, assertion_string) = match assertion_string {
-            WorkflowConfigAssertion::assert(val) => (false, compile_string(val, workflow_data)),
-            WorkflowConfigAssertion::assert_not(val) => (true, compile_string(val, workflow_data)),
+            WorkflowConfigAssertion::expect(val) => (false, compile_string(val, workflow_data)),
+            WorkflowConfigAssertion::expect_not(val) => (true, compile_string(val, workflow_data)),
         };
 
         Assertion {
@@ -116,7 +116,7 @@ pub fn parse_assertion_string(assertion_string: &str, not: bool) -> AssertionTes
     let property = parts[0];
     parts.remove(0);
 
-    // !assert x isArray
+    // !expect x isArray
     if parts.len() == 1 && ASSERTION_TYPES.contains(&parts[0]) {
         return AssertionTest {
             test: parts[0].to_owned(),
@@ -126,7 +126,7 @@ pub fn parse_assertion_string(assertion_string: &str, not: bool) -> AssertionTes
         };
     }
 
-    // !assert x data.0.title isNotEmpty
+    // !expect x data.0.title isNotEmpty
     if parts.len() == 2 && ASSERTION_TYPES.contains(&parts[1]) {
         return AssertionTest {
             test: parts[1].to_owned(),
@@ -136,7 +136,7 @@ pub fn parse_assertion_string(assertion_string: &str, not: bool) -> AssertionTes
         };
     }
 
-    // !assert x isAbove 5
+    // !expect x isAbove 5
     if parts.len() > 1 && ASSERTION_TYPES.contains(&parts[0]) {
         let mut value = parts.clone();
         value.remove(0);
@@ -150,7 +150,7 @@ pub fn parse_assertion_string(assertion_string: &str, not: bool) -> AssertionTes
         };
     };
 
-    // !assert x data.0.id equal 0
+    // !expect x data.0.id equal 0
     if parts.len() > 2 && ASSERTION_TYPES.contains(&parts[1]) {
         let mut value = parts.clone();
         value.remove(0);
@@ -194,35 +194,35 @@ mod tests {
         };
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("body.user.name to_equal ${{ env.name }}".to_string()),
+            &WorkflowConfigAssertion::expect("body.user.name to_equal ${{ env.name }}".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert_not("body.user.name to_equal bad value".to_string()),
+            &WorkflowConfigAssertion::expect_not("body.user.name to_equal bad value".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("headers.nope to_be_undefined".to_string()),
+            &WorkflowConfigAssertion::expect("headers.nope to_be_undefined".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert_not("body to_be_empty".to_string()),
+            &WorkflowConfigAssertion::expect_not("body to_be_empty".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);
         assert_eq!(result.passed, true);
 
         let assertion = Assertion::from_assertion(
-            &WorkflowConfigAssertion::assert("body.name to_equal ${{ mask env.name }}".to_string()),
+            &WorkflowConfigAssertion::expect("body.name to_equal ${{ mask env.name }}".to_string()),
             &data,
         );
         let result = assertion.assert(&assertion_data);

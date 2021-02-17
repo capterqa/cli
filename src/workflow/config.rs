@@ -45,8 +45,8 @@ pub struct WorkflowConfigStep {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_camel_case_types)]
 pub enum WorkflowConfigAssertion {
-    assert(String),
-    assert_not(String),
+    expect(String),
+    expect_not(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,9 +95,9 @@ impl WorkflowConfig {
     }
 
     pub fn from_yaml(yaml: String) -> Result<WorkflowConfig, serde_yaml::Error> {
-        // we use a custom tag !!assert, which yaml-serde currently can't parse
-        // so we need to replace it with !assert_not manually before parsing
-        let yaml = str::replace(&yaml, "!!assert", "!assert_not");
+        // we use a custom tag !!expect, which yaml-serde currently can't parse
+        // so we need to replace it with !expect_not manually before parsing
+        let yaml = str::replace(&yaml, "!!expect", "!expect_not");
 
         serde_yaml::from_str(&yaml)
     }
@@ -124,12 +124,12 @@ mod tests {
                 id: test
                 url: http://localhost:3002/test
                 assertions:
-                  - !assert status equal 200
+                  - !expect status equal 200
               - name: step 2
                 id: test
                 url: http://localhost:3002/test/1
                 assertions:
-                  - !assert status equal 200
+                  - !expect status equal 200
             "
         };
         let config = WorkflowConfig::from_yaml(yaml.into()).unwrap();
@@ -159,7 +159,7 @@ mod tests {
             steps:
               - name: step 1
                 assertions:
-                  - !assert status equal 200
+                  - !expect status equal 200
             "
         };
         WorkflowConfig::from_yaml(yaml.into()).unwrap();
