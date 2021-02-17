@@ -6,8 +6,7 @@ env:
 steps:
   - name: fetch all posts
     id: posts
-    url: https://fake-api.capter.io/api/posts
-    method: GET
+    url: GET https://fake-api.capter.io/api/posts
     assertions:
       - !expect status to_equal 200
       - !!expect status to_equal 500
@@ -26,16 +25,14 @@ steps:
 
   - name: fetch one post
     id: post
-    url: https://fake-api.capter.io/api/posts/1
-    method: GET
+    url: GET https://fake-api.capter.io/api/posts/1
     assertions:
       - !expect status to_equal 200
       - !expect body.content to_match dicta dolor ut qui
       - !!expect body.id to_match 5
 
   - name: fetch all posts from author
-    url: https://fake-api.capter.io/api/posts
-    method: GET
+    url: GET https://fake-api.capter.io/api/posts
     query:
       authorId: ${{ post.response.body.authorId }}
     body:
@@ -49,8 +46,7 @@ steps:
       - !expect body.0.authorId to_equal ${{ mask post.response.body.id }}
 
   - name: fetch posts by user with id 20
-    url: https://fake-api.capter.io/api/posts
-    method: GET
+    url: GET https://fake-api.capter.io/api/posts
     query:
       authorId: 20
     assertions:
@@ -58,9 +54,16 @@ steps:
       - !expect body.0.authorId to_be_undefined
 
   - name: fetch author with id from env vars
-    url: https://fake-api.capter.io/api/authors/${{ env.AUTHOR_ID }}
-    method: GET
+    url: GET https://fake-api.capter.io/api/authors/${{ env.AUTHOR_ID }}
     skip: true
     assertions:
       - !expect status to_equal 200
       - !expect body.id to_equal ${{ env.AUTHOR_ID }}
+
+  - name: create post
+    url: POST https://fake-api.capter.io/api/posts
+    body:
+      title: Post title
+    assertions:
+      - !expect status to_equal 201
+      - !expect body.title to_equal Post title

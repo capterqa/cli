@@ -10,6 +10,10 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_json::Value;
 
+pub const HTTP_METHODS: &[&str] = &[
+    "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH",
+];
+
 /// Used create a request from a WorkflowConfigStep,
 /// call it, and assert on the response.
 ///
@@ -62,19 +66,23 @@ impl Request {
             .get(step_index as usize)
             .expect("Step index out of bounds");
 
-        let url = get_url(step, workflow_data, workflow_config);
+        let (url, mut method) = get_url(step, workflow_data, workflow_config);
         let body = get_body(step, workflow_data);
         let query = get_query(step, workflow_data);
         let headers = get_headers(step, workflow_data);
-        let method = get_method(step, workflow_config);
+        // if method is missing in the url string
+        // we figure it out here
+        if method.is_none() {
+            method = Some(get_method(step, workflow_config));
+        }
 
         Request {
             url,
             query,
             body,
-            method,
             headers,
             step_index,
+            method: method.unwrap_or("GET".to_string()),
             created_at: Utc::now(),
             step: step.to_owned(),
             workflow_data: workflow_data.to_owned(),
@@ -230,19 +238,50 @@ fn get_body(step: &WorkflowConfigStep, workflow_data: &Value) -> CompiledValue {
 /// Will use the step url if it's set,
 /// and fallback to the workflow url if it's not.
 ///
+/// The second part of the return is an optional method that can be passed like
+/// `POST https://api.com`
+///
 /// This exit if no url is found, because it's required.
 fn get_url(
     step: &WorkflowConfigStep,
     workflow_data: &Value,
     workflow_config: &WorkflowConfig,
-) -> CompiledString {
-    if let Some(url) = &step.url {
-        return compile_string(url, &workflow_data);
+) -> (CompiledString, Option<String>) {
+    let mut url = step.url.to_owned();
+    if let Some(step_url) = &url {
+        url = Some(step_url.to_owned());
     };
 
-    if let Some(url) = &workflow_config.url {
-        return compile_string(&url, &workflow_data);
+    if let Some(workflow_url) = &workflow_config.url {
+        url = Some(workflow_url.to_owned());
     };
+
+    if let Some(url) = url {
+        // remove method if it's set in the URL
+        // the method `get_method` will extract and return this
+        // so here we just remove it
+        let mut parts: Vec<&str> = url.split(" ").collect();
+
+        // if there's just one part, return it
+        if parts.len() == 1 {
+            return (compile_string(&url, &workflow_data), None);
+        }
+
+        // if there's 2 parts more we might have
+        // GET https://url.com, so we want to split out the first part
+        if parts.len() > 1 {
+            // if the first part is a method
+            if HTTP_METHODS.contains(&parts[0]) {
+                let method = parts[0].to_owned();
+                parts.remove(0);
+                let url = parts.join(" ");
+                return (compile_string(&url, &workflow_data), Some(method));
+            }
+
+            // if first part is not a method, just return the whole url
+            return (compile_string(&url, &workflow_data), None);
+        }
+    }
 
     exit_with_code(
         exitcode::CONFIG,
