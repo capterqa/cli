@@ -1,6 +1,6 @@
 {
   "name": "@capterqa/cli",
-  "version": "1.0.0-alpha.14",
+  "version": "1.0.0-alpha.16",
   "description": "Capter is a lightweight end-to-end testing tool for APIs.",
   "main": "index.js",
   "author": "capter.io <filip@capter.io>",
