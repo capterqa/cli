@@ -9,16 +9,16 @@ steps:
     url: https://fake-api.capter.io/api/posts
     method: GET
     assertions:
-      - !assert status to_equal 200
-      - !!assert status to_equal 500
-      - !assert headers.content-type to_contain application/json
-      - !assert duration to_be_below 1000
-      - !assert duration to_be_above ${{ env.DURATION }}
-      - !assert body to_be_array
-      - !assert body to_have_length 50
-      - !assert body.0.id to_equal ${{ mask env.POST_ID }}
-      - !!assert body.0.title to_be_empty
-      - !!assert body.0.title to_equal this is not the title
+      - !expect status to_equal 200
+      - !!expect status to_equal 500
+      - !expect headers.content-type to_contain application/json
+      - !expect duration to_be_below 1000
+      - !expect duration to_be_above ${{ env.DURATION }}
+      - !expect body to_be_array
+      - !expect body to_have_length 50
+      - !expect body.0.id to_equal ${{ mask env.POST_ID }}
+      - !!expect body.0.title to_be_empty
+      - !!expect body.0.title to_equal this is not the title
     options:
       mask:
         - title
@@ -29,9 +29,9 @@ steps:
     url: https://fake-api.capter.io/api/posts/1
     method: GET
     assertions:
-      - !assert status to_equal 200
-      - !assert body.content to_match dicta dolor ut qui
-      - !!assert body.id to_match 5
+      - !expect status to_equal 200
+      - !expect body.content to_match dicta dolor ut qui
+      - !!expect body.id to_match 5
 
   - name: fetch all posts from author
     url: https://fake-api.capter.io/api/posts
@@ -45,8 +45,8 @@ steps:
           - ${{ post.response.body.authorId }}
           - ${{ mask post.response.body.authorId }}
     assertions:
-      - !assert status to_equal 200
-      - !assert body.0.authorId to_equal ${{ mask post.response.body.id }}
+      - !expect status to_equal 200
+      - !expect body.0.authorId to_equal ${{ mask post.response.body.id }}
 
   - name: fetch posts by user with id 20
     url: https://fake-api.capter.io/api/posts
@@ -54,13 +54,13 @@ steps:
     query:
       authorId: 20
     assertions:
-      - !assert status to_equal 200
-      - !assert body.0.authorId to_be_undefined
+      - !expect status to_equal 200
+      - !expect body.0.authorId to_be_undefined
 
   - name: fetch author with id from env vars
     url: https://fake-api.capter.io/api/authors/${{ env.AUTHOR_ID }}
     method: GET
     skip: true
     assertions:
-      - !assert status to_equal 200
-      - !assert body.id to_equal ${{ env.AUTHOR_ID }}
+      - !expect status to_equal 200
+      - !expect body.id to_equal ${{ env.AUTHOR_ID }}

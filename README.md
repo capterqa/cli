@@ -29,13 +29,13 @@ steps:
     id: products
     url: ${{ env.URL }}/api/products
     assertions:
-      - !assert status to_equal 200
-      - !assert body to_be_array
+      - !expect status to_equal 200
+      - !expect body to_be_array
 
   - name: fetch first product
     url: ${{ env.URL }}/api/posts/${{ products.response.body.0.id }}
     assertions:
-      - !assert body.id to_equal ${{ products.response.body.0.id }}
+      - !expect body.id to_equal ${{ products.response.body.0.id }}
 ```
 
 Then run the CLI:
