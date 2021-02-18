@@ -1,4 +1,4 @@
-name: graphql-inline
+name: graphql
 url: https://fake-api.capter.io/api/graphql
 steps:
   - name: fetch all posts

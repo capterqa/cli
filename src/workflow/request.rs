@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use super::{response::ResponseData, WorkflowConfigAssertion};
 use crate::{
     assert::AssertionResultData,
@@ -71,7 +73,7 @@ impl Request {
         let (url, mut method) = get_url(step, workflow_data, workflow_config);
         let body = get_body(step, workflow_data);
         let query = get_query(step, workflow_data);
-        let headers = get_headers(step, workflow_data);
+        let headers = get_headers(step, workflow_data, &workflow_config);
         // if method is missing in the url string
         // we figure it out here
         if method.is_none() {
@@ -197,13 +199,34 @@ fn get_method(step: &WorkflowConfigStep, workflow_config: &WorkflowConfig) -> St
 
 /// Get the headers for a request.
 ///
+/// Will merge both workflow headers and step headers.
+///
 /// If graphql is used, we add a json header by default.
-fn get_headers(step: &WorkflowConfigStep, workflow_data: &Value) -> CompiledValue {
-    let mut headers = serde_yaml::to_value(&step.headers).unwrap();
+fn get_headers(
+    step: &WorkflowConfigStep,
+    workflow_data: &Value,
+    workflow_config: &WorkflowConfig,
+) -> CompiledValue {
+    let step_headers = step.headers.clone();
+    let workflow_headers = workflow_config.headers.clone();
+    let mut headers: BTreeMap<String, serde_yaml::Value> = BTreeMap::new();
+
+    if let Some(mut workflow_headers) = workflow_headers {
+        headers.append(&mut workflow_headers);
+    }
+
+    if let Some(mut step_headers) = step_headers {
+        headers.append(&mut step_headers);
+    }
 
     if step.graphql.is_some() {
-        headers["content-type"] = serde_yaml::Value::String("application/json".to_string());
+        headers.insert(
+            "content-type".to_string(),
+            serde_yaml::Value::String("application/json".to_string()),
+        );
     }
+
+    let headers = serde_yaml::to_value(&headers).unwrap();
 
     compile_value(Some(headers), &workflow_data)
 }
@@ -327,5 +350,29 @@ mod tests {
         let (url, method) = get_url(&step2, &workflow_data, &workflow_config);
         assert_eq!(url.raw, "https://fake-api.cater.io/users");
         assert_eq!(method, None);
+    }
+
+    #[test]
+    fn test_merging_headers() {
+        let yaml = indoc! {"
+            ---
+            name: test
+            headers:
+              a: b
+            steps:
+              - name: step 1
+                url: POST http://localhost:3000/users
+                headers:
+                  b: c
+                assertions:
+                  - !expect status to_equal 200
+        "};
+        let workflow_config = WorkflowConfig::from_yaml(yaml.into()).unwrap();
+
+        let step1 = workflow_config.steps[0].clone();
+
+        let headers = get_headers(&step1, &json!({}), &workflow_config);
+        assert_eq!(headers.raw["a"], "b");
+        assert_eq!(headers.raw["b"], "c");
     }
 }
