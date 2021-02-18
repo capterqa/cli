@@ -22,6 +22,7 @@ pub struct WorkflowConfig {
     pub name: String,
     pub url: Option<String>,
     pub method: Option<String>,
+    pub headers: Option<BTreeMap<String, serde_yaml::Value>>,
     pub env: Option<BTreeMap<String, serde_yaml::Value>>,
     pub steps: Vec<WorkflowConfigStep>,
     pub skip: Option<bool>,
