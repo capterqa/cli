@@ -1,6 +1,8 @@
 use crate::CliOptions;
 use last_git_commit::LastGitCommit;
 use serde::Serialize;
+use serde_json::json;
+use std::env;
 
 #[derive(Debug, Serialize)]
 #[allow(non_camel_case_types)]
@@ -57,6 +59,18 @@ impl RunSource {
 
         if let Some(vendor) = ci_info.name {
             source.ci = Some(vendor);
+        }
+
+        // github actions
+        if source.ci == Some("GitHub Actions".to_string()) {
+            source.sha = Some(env::var("GITHUB_SHA").unwrap());
+            source.branch = Some(env::var("GITHUB_REPOSITORY").unwrap());
+            source.meta = Some(json!({
+                "GITHUB_HEAD_REF": env::var("GITHUB_HEAD_REF").unwrap(),
+                "GITHUB_BASE_REF": env::var("GITHUB_BASE_REF").unwrap(),
+                "GITHUB_WORKFLOW": env::var("GITHUB_WORKFLOW").unwrap(),
+                "GITHUB_RUN_ID": env::var("GITHUB_RUN_ID").unwrap(),
+            }))
         }
 
         source
