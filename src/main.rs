@@ -9,7 +9,7 @@ use globwalk;
 use serde_json::json;
 use ui::TerminalUi;
 use ureq;
-use utils::exit_with_code;
+use utils::{exit_with_code, Logger};
 use workflow::{workflow_result::WorkflowResult, RunSource, WorkflowConfig};
 
 pub struct CliOptions {
@@ -113,6 +113,12 @@ fn main() {
         }
 
         terminal_ui.summarize(&workflow_runs);
+
+        // write to log on fail
+        if !passed {
+            let mut logger = Logger::new();
+            logger.log_workflow_results(&workflow_runs);
+        }
 
         let webhook = match webhook {
             Some(val) => Some(val),
