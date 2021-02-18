@@ -7,6 +7,7 @@ use crossterm::{
     style::{Attribute, Print, SetAttribute},
     tty::IsTty,
 };
+use serde_json::Value;
 use std::{io::stdout, time::Instant};
 
 /// The `TerminalUi` is responsible for printing out information
@@ -76,6 +77,10 @@ impl TerminalUi {
             Print(TerminalUi::format_attr("sha", &source.sha)),
             Print(TerminalUi::format_attr("branch", &source.branch)),
             Print(TerminalUi::format_attr("commit", &source.commit_message)),
+            Print(format!(
+                "  meta: {}\n",
+                &source.meta.clone().unwrap_or(Value::Null)
+            )),
             SetAttribute(Attribute::Reset),
         )
         .unwrap();
