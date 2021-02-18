@@ -181,8 +181,6 @@ mod tests {
         "};
         let config: Value = from_str(yaml).unwrap();
 
-        println!("{:#?}", config["body"]);
-
         request.add_body(&config["body"]);
 
         let response = request.call();

@@ -15,7 +15,7 @@ use ureq::ErrorKind;
 pub struct ResponseData {
     pub created_at: DateTime<Utc>,
     pub status: Option<u16>,
-    pub status_text: String,
+    pub status_text: Option<String>,
     pub headers: serde_json::Value,
     pub body: Option<serde_json::Value>,
     pub response_time: i64,
@@ -26,7 +26,7 @@ impl Default for ResponseData {
     fn default() -> ResponseData {
         ResponseData {
             created_at: Utc::now(),
-            status_text: "".to_string(),
+            status_text: None,
             headers: json!(Value::Null),
             response_time: 0,
             status: None,
@@ -61,15 +61,12 @@ impl ResponseData {
                     headers.insert(name, json!(value));
                 }
 
-                // TODO: fix
-                // let status_text = response.status_text();
-                let status_text = "TODO".to_string();
-                let body: Value = response.into_json().unwrap_or(json!(status_text));
+                let body: Value = response.into_json().unwrap_or(Value::Null);
 
                 ResponseData {
                     response_time,
                     status: Some(status),
-                    status_text: status_text.to_owned(),
+                    status_text: None,
                     body: Some(body),
                     headers: headers.into(),
                     ..Default::default()
@@ -78,7 +75,7 @@ impl ResponseData {
             Err(ureq::Error::Status(code, response)) => ResponseData {
                 response_time,
                 status: Some(code),
-                status_text: response.status_text().to_owned(),
+                status_text: Some(response.status_text().to_owned()),
                 ..Default::default()
             },
             Err(error) => {
@@ -90,7 +87,7 @@ impl ResponseData {
 
                 ResponseData {
                     response_time,
-                    status_text,
+                    status_text: Some(status_text),
                     ..Default::default()
                 }
             }
@@ -189,7 +186,10 @@ mod tests {
         let result = ureq::request("GET", &format!("{}/500", url)).call();
         let response = ResponseData::from_result(result, 0);
 
-        assert_eq!(response.status_text, "Internal Server Error".to_string());
+        assert_eq!(
+            response.status_text,
+            Some("Internal Server Error".to_string())
+        );
         assert_eq!(response.status, Some(500));
     }
 
@@ -199,7 +199,10 @@ mod tests {
         let response = ResponseData::from_result(result, 0);
 
         assert_eq!(response.status, None);
-        assert_eq!(response.status_text, "Could not connect to URL");
+        assert_eq!(
+            response.status_text,
+            Some("Could not connect to URL".to_owned())
+        );
     }
 
     #[test]
