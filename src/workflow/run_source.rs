@@ -64,12 +64,13 @@ impl RunSource {
         // github actions
         if source.ci == Some("GitHub Actions".to_string()) {
             source.sha = Some(env::var("GITHUB_SHA").unwrap());
-            source.branch = Some(env::var("GITHUB_REPOSITORY").unwrap());
+            source.repository = Some(env::var("GITHUB_REPOSITORY").unwrap());
             source.meta = Some(json!({
                 "GITHUB_HEAD_REF": env::var("GITHUB_HEAD_REF").unwrap(),
                 "GITHUB_BASE_REF": env::var("GITHUB_BASE_REF").unwrap(),
                 "GITHUB_WORKFLOW": env::var("GITHUB_WORKFLOW").unwrap(),
                 "GITHUB_RUN_ID": env::var("GITHUB_RUN_ID").unwrap(),
+                "GITHUB_ACTOR": env::var("GITHUB_ACTOR").unwrap(),
             }))
         }
 

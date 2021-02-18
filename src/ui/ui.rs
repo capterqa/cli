@@ -76,11 +76,11 @@ impl TerminalUi {
             Print(TerminalUi::format_attr("repo", &source.repository)),
             Print(TerminalUi::format_attr("sha", &source.sha)),
             Print(TerminalUi::format_attr("branch", &source.branch)),
-            Print(TerminalUi::format_attr("commit", &source.commit_message)),
             Print(format!(
                 "  meta: {}\n",
                 &source.meta.clone().unwrap_or(Value::Null)
             )),
+            Print(TerminalUi::format_attr("commit", &source.commit_message)),
             SetAttribute(Attribute::Reset),
         )
         .unwrap();
