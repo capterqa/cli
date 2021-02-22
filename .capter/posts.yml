@@ -8,13 +8,13 @@ steps:
     id: posts
     url: GET https://fake-api.capter.io/api/posts
     assertions:
-      - !expect status to_equal 200
+      - !expect status to_equal 201
       - !!expect status to_equal 500
       - !expect headers.content-type to_contain application/json
-      - !expect duration to_be_below 1000
+      - !expect duration to_be_below 50
       - !expect duration to_be_above ${{ env.DURATION }}
       - !expect body to_be_array
-      - !expect body to_have_length 50
+      - !expect body to_have_length 60
       - !expect body.0.id to_equal ${{ mask env.POST_ID }}
       - !!expect body.0.title to_be_empty
       - !!expect body.0.title to_equal this is not the title
