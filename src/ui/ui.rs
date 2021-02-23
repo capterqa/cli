@@ -7,7 +7,7 @@ use crossterm::{
     style::{Attribute, Print, SetAttribute},
     tty::IsTty,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::{io::stdout, time::Instant};
 
 /// The `TerminalUi` is responsible for printing out information
@@ -72,21 +72,22 @@ impl TerminalUi {
             Print("\ngit info:\n"),
             SetAttribute(Attribute::Reset),
             Print(format!("  source: {:?}\n", &source.source)),
-            Print(TerminalUi::format_attr("ci", &source.ci)),
-            Print(TerminalUi::format_attr("repo", &source.repository)),
-            Print(TerminalUi::format_attr("sha", &source.sha)),
-            Print(TerminalUi::format_attr("branch", &source.branch)),
+            Print(TerminalUi::format_attr("ci", &json!(&source.ci))),
+            Print(TerminalUi::format_attr("repo", &json!(&source.repository))),
+            Print(TerminalUi::format_attr("sha", &json!(&source.sha))),
+            Print(TerminalUi::format_attr("branch", &json!(&source.branch))),
             Print(format!(
                 "  meta: {}\n",
                 &source.meta.clone().unwrap_or(Value::Null)
             )),
-            Print(TerminalUi::format_attr("commit", &source.commit_message)),
+            Print(TerminalUi::format_attr("commit", &json!(&source.commit))),
+            Print(TerminalUi::format_attr("pr", &json!(&source.pr))),
             SetAttribute(Attribute::Reset),
         )
         .unwrap();
     }
 
-    fn format_attr(key: &str, val: &Option<String>) -> String {
-        format!("  {}: {}\n", &key, &val.clone().unwrap_or("".to_string()))
+    fn format_attr(key: &str, val: &Value) -> String {
+        format!("  {}: {}\n", &key, &val.clone())
     }
 }

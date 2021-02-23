@@ -29,17 +29,17 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
-        with:
-          version: '0.15.0'
-          args: '-- --test-threads 1'
-
       - name: run
         uses: actions-rs/cargo@v1
         with:
           command: run
           args: test --token ${{ secrets.CAPTER_TOKEN }} --debug
+
+      - name: run cargo-tarpaulin
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          version: '0.15.0'
+          args: '-- --test-threads 1'
 
       - name: upload to codecov.io
         uses: codecov/codecov-action@v1.0.2
