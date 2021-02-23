@@ -1,3 +1,4 @@
+use crate::utils::exit_with_code;
 use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -5,8 +6,6 @@ use std::{
     fs,
     path::PathBuf,
 };
-
-use crate::utils::exit_with_code;
 
 /// A `WorkflowConfig` is the struct we convert the yaml files into.
 ///
