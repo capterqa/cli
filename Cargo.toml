@@ -1,6 +1,6 @@
 [package]
 name = "capter"
-version = "1.0.0-alpha.23"
+version = "1.0.0-alpha.24"
 authors = ["capter.io <filip@capter.io>"]
 license = "MIT"
 description = "Capter is a lightweight end-to-end testing tool for APIs."
