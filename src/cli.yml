@@ -25,9 +25,6 @@ subcommands:
             help: how long to wait for a connection
             value_name: SECONDS
             takes_value: true
-        - skip-git:
-            long: skip-git
-            help: don't pass any git information to the webhook
         - dry-run:
             long: dry-run
             help: skip posting the run to the webhook

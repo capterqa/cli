@@ -1,4 +1,5 @@
 mod assert;
+mod ci;
 mod compile;
 mod ui;
 mod utils;
@@ -13,7 +14,6 @@ use utils::{exit_with_code, Logger};
 use workflow::{workflow_result::WorkflowResult, RunSource, WorkflowConfig};
 
 pub struct CliOptions {
-    skip_git: bool,
     is_debug: bool,
     timeout: u64,
 }
@@ -21,7 +21,6 @@ pub struct CliOptions {
 impl Default for CliOptions {
     fn default() -> CliOptions {
         CliOptions {
-            skip_git: false,
             is_debug: false,
             timeout: 30,
         }
@@ -47,13 +46,10 @@ fn main() {
         let tests_glob = matches.value_of("INPUT").unwrap();
         // stops the cli from posting to the webhook
         let dry_run = matches.is_present("dry-run");
-        // stops the cli from collecting data (branch, commit message) from git
-        let skip_git = matches.is_present("skip-git");
         // the timeout for requests
         let timeout = matches.value_of("timeout");
 
         let cli_options = CliOptions {
-            skip_git,
             is_debug,
             timeout: timeout.unwrap_or("30").parse().unwrap_or(30),
         };
