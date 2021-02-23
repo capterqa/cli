@@ -33,11 +33,16 @@ struct GitHubActionsEventPayload {
 
 #[derive(Deserialize, Serialize, Debug)]
 struct GitHubActionsPullReqeustPayload {
-    after: Option<String>,
-    before: Option<String>,
     id: Option<i32>,
     number: Option<i32>,
     title: Option<String>,
+    base: Option<GitHubActionsPullReqeustRefPayload>,
+    head: Option<GitHubActionsPullReqeustRefPayload>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct GitHubActionsPullReqeustRefPayload {
+    sha: Option<String>,
 }
 
 /// Information about where the run was excecuted. It will
