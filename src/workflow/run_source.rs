@@ -18,6 +18,7 @@ impl Default for Source {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct RunSourceRef {
     pub sha: Option<String>,
+    #[serde(rename(serialize = "ref"))]
     pub _ref: Option<String>,
 }
 
