@@ -18,6 +18,8 @@ struct GitHubActionsEventPayload {
     number: Option<i32>,
     pull_request: Option<GitHubActionsPullRequestPayload>,
     head_commit: Option<GitHubActionsCommitPayload>,
+    #[serde(alias = "ref")]
+    _ref: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -51,8 +53,6 @@ impl From<GitHubActionsPullRequestPayload> for RunSourcePullRequest {
 struct GitHubActionsCommitPayload {
     id: Option<String>,
     message: Option<String>,
-    #[serde(alias = "ref")]
-    _ref: Option<String>,
     author: Option<GitHubActionsUserPayload>,
     committer: Option<GitHubActionsUserPayload>,
 }
@@ -98,21 +98,26 @@ impl RunSource {
         self.repository = Some(env::var("GITHUB_REPOSITORY").unwrap());
 
         if let Some(event) = read_github_workflow_event() {
-            // if event has a commit
-            if let Some(commit) = event.head_commit {
-                self.sha = commit.id.clone();
-                self.branch = commit._ref.clone();
-                self.commit = Some(commit.into());
-            }
-            // if event has pr
-            if let Some(pr) = &event.pull_request {
-                self.pr = Some(pr.clone().into());
-                if let Some(head) = &pr.head {
-                    self.sha = head.sha.clone();
-                    self.branch = head._ref.clone();
-                }
-            }
+            self.add_github_event_to_run_source(event);
         };
+    }
+
+    /// Adds event properties to self
+    fn add_github_event_to_run_source(&mut self, event: GitHubActionsEventPayload) {
+        // if event has a commit
+        if let Some(commit) = event.head_commit {
+            self.sha = commit.id.clone();
+            self.branch = event._ref.clone();
+            self.commit = Some(commit.into());
+        }
+        // if event has pr
+        if let Some(pr) = &event.pull_request {
+            self.pr = Some(pr.clone().into());
+            if let Some(head) = &pr.head {
+                self.sha = head.sha.clone();
+                self.branch = head._ref.clone();
+            }
+        }
     }
 }
 
@@ -134,4 +139,43 @@ fn read_github_workflow_event() -> Option<GitHubActionsEventPayload> {
         }
         _ => None,
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_github_actions() {
+        let mut run_source = RunSource {
+            ..Default::default()
+        };
+
+        let event = json!({
+            "head_commit": {
+                "id": "commit-sha",
+                "message": "commit-message",
+            },
+            "pull_request": {
+                "title": "pr-title",
+                "number": 5
+            },
+            "ref": "event-ref"
+        })
+        .to_string();
+
+        let event: GitHubActionsEventPayload = serde_json::from_str(&event).unwrap();
+        run_source.add_github_event_to_run_source(event);
+
+        assert_eq!(run_source.branch, Some("event-ref".to_string()));
+        let commit = run_source.commit.unwrap();
+        let pr = run_source.pr.unwrap();
+
+        assert_eq!(commit.sha, Some("commit-sha".to_string()));
+        assert_eq!(commit.message, Some("commit-message".to_string()));
+
+        assert_eq!(pr.title, Some("pr-title".to_string()));
+        assert_eq!(pr.number, Some(5));
+    }
 }
