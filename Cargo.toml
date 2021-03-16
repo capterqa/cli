@@ -1,6 +1,6 @@
 [package]
 name = "capter"
-version = "1.0.0-alpha.26"
+version = "1.0.0-alpha.27"
 authors = ["capter.io <filip@capter.io>"]
 license = "MIT"
 description = "Capter is a lightweight end-to-end testing tool for APIs."
@@ -29,6 +29,7 @@ globwalk = "0.8.1"
 path-clean = "0.1.0"
 ureq = { version = "2.0.1", features = ["json"] }
 exitcode = "1.1.2"
+dotenv = "0.15.0"
 
 [dev-dependencies]
 indoc = "1.0"

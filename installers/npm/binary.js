@@ -8,7 +8,7 @@ const error = (msg) => {
   process.exit(1);
 };
 
-const { version, repository } = require('./package.json');
+const { version } = require('./package.json');
 let name = 'capter';
 
 const supportedPlatforms = [

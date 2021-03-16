@@ -75,12 +75,13 @@ checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
 
 [[package]]
 name = "capter"
-version = "1.0.0-alpha.26"
+version = "1.0.0-alpha.27"
 dependencies = [
  "chrono",
  "ci_info",
  "clap",
  "crossterm",
+ "dotenv",
  "exitcode",
  "globwalk",
  "indoc",
@@ -208,6 +209,12 @@ name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
+
+[[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "dtoa"

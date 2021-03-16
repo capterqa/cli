@@ -6,6 +6,7 @@ mod utils;
 mod workflow;
 
 use clap::{crate_version, load_yaml, App, AppSettings};
+use dotenv::dotenv;
 use globwalk;
 use serde_json::json;
 use ui::TerminalUi;
@@ -28,6 +29,9 @@ impl Default for CliOptions {
 }
 
 fn main() {
+    // read .env file
+    dotenv().ok();
+
     let yml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yml)
         .setting(AppSettings::SubcommandRequiredElseHelp)
