@@ -1,6 +1,6 @@
 {
   "name": "@capterqa/cli",
-  "version": "1.0.0-alpha.26",
+  "version": "1.0.0-alpha.27",
   "description": "Capter is a lightweight end-to-end testing tool for APIs.",
   "main": "index.js",
   "author": "capter.io <filip@capter.io>",
@@ -24,8 +24,6 @@
   "dependencies": {
     "axios": "^0.21.1",
     "console.table": "^0.10.0",
-    "dotenv": "^8.2.0",
-    "find-config": "^1.0.0",
     "rimraf": "^3.0.2"
   }
 }

@@ -3,20 +3,11 @@ const { join } = require('path');
 const { spawnSync } = require('child_process');
 const axios = require('axios');
 const rimraf = require('rimraf');
-require('dotenv').config({ path: require('find-config')('.env') });
-
-const TOKEN = process.env.GITHUB_TOKEN;
 
 const error = (msg) => {
   console.error(msg);
   process.exit(1);
 };
-
-if (!process.env.GITHUB_TOKEN) {
-  return error(
-    '⚠️  failed to install capter\n   no `GITHUB_TOKEN` found in .env\n   add it and run install again\n'
-  );
-}
 
 class Binary {
   constructor(name, repo, version, target) {
@@ -24,8 +15,7 @@ class Binary {
     this.repo = repo;
     this.version = version;
     this.target = target;
-    //npm.pkg.github.com
-    https: this.installDirectory = join(__dirname, 'bin');
+    this.installDirectory = join(__dirname, 'bin');
 
     if (!existsSync(this.installDirectory)) {
       mkdirSync(this.installDirectory, { recursive: true });
@@ -47,7 +37,6 @@ class Binary {
       url: `https://api.github.com/repos/${this.repo}/releases`,
       headers: {
         Accept: 'application/vnd.github.v3.raw',
-        authorization: `token ${TOKEN}`,
       },
     })
       .then((res) => {
@@ -60,7 +49,6 @@ class Binary {
           url: `https://api.github.com/repos/${this.repo}/releases/assets/${assetId}`,
           responseType: 'stream',
           headers: {
-            authorization: `token ${TOKEN}`,
             Accept: 'application/octet-stream',
           },
         })
