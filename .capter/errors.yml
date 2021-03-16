@@ -2,18 +2,18 @@ name: errors
 steps:
   - name: 500 error
     id: posts
-    url: GET https://fake-api.capter.io/api/errors/500
+    url: GET ${{ env.URL }}/api/errors/500
     assertions:
       - !expect status to_equal 500
 
   - name: 404 error
     id: posts
-    url: GET https://fake-api.capter.io/api/errors/404
+    url: GET ${{ env.URL }}/api/errors/404
     assertions:
       - !expect status to_equal 404
 
   - name: 301 error
     id: posts
-    url: GET https://fake-api.capter.io/api/errors/301
+    url: GET ${{ env.URL }}/api/errors/301
     assertions:
       - !expect status to_equal 301

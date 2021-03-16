@@ -1,5 +1,5 @@
 name: graphql
-url: https://fake-api.capter.io/api/graphql
+url: ${{ env.URL }}/api/graphql
 steps:
   - name: fetch all posts
     id: posts
