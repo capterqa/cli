@@ -33,38 +33,19 @@ class Binary {
 
     console.log(`downloading binary from ${this.repo}...`);
 
+    const url = `https://github.com/capterqa/cli/releases/download/v${this.version}/${this.name}-v${this.version}-${this.target}`;
+
     return axios({
-      url: `https://api.github.com/repos/${this.repo}/releases`,
-      headers: {
-        Accept: 'application/vnd.github.v3.raw',
-      },
+      url,
+      responseType: 'stream',
     })
       .then((res) => {
-        var release = res.data[0];
-        var asset = release.assets.find((r) => {
-          return r.name.includes(this.target);
-        });
-        var assetId = asset.id;
-        return axios({
-          url: `https://api.github.com/repos/${this.repo}/releases/assets/${assetId}`,
-          responseType: 'stream',
-          headers: {
-            Accept: 'application/octet-stream',
-          },
-        })
-          .then((res) => {
-            res.data.pipe(
-              createWriteStream(`${this.installDirectory}/${this.name}`, {
-                mode: 0o755,
-              })
-            );
+        console.log(`${this.name} has been installed!`);
+        res.data.pipe(
+          createWriteStream(`${this.installDirectory}/${this.name}`, {
+            mode: 0o755,
           })
-          .then(() => {
-            console.log(`${this.name} has been installed!`);
-          })
-          .catch((e) => {
-            error(`error fetching release: ${e.message}`);
-          });
+        );
       })
       .catch((e) => {
         error(`error fetching release: ${e.message}`);
