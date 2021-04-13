@@ -72,12 +72,16 @@ impl ResponseData {
                     ..Default::default()
                 }
             }
-            Err(ureq::Error::Status(code, response)) => ResponseData {
-                response_time,
-                status: Some(code),
-                status_text: Some(response.status_text().to_owned()),
-                ..Default::default()
-            },
+            Err(ureq::Error::Status(code, response)) => {
+                let body: Value = response.into_json().unwrap_or(Value::Null);
+
+                ResponseData {
+                    response_time,
+                    status: Some(code),
+                    body: Some(body),
+                    ..Default::default()
+                }
+            }
             Err(error) => {
                 // ending up here means there were NO response
                 let status_text = match &error.kind() {
@@ -181,16 +185,31 @@ mod tests {
     #[test]
     fn test_bad_response() {
         let url = &mockito::server_url();
-        let _m = mock("GET", "/500").with_status(500).create();
+        let _m = mock("GET", "/500")
+            .with_status(500)
+            .with_body(r#"{"error": "error 500"}"#)
+            .create();
 
         let result = ureq::request("GET", &format!("{}/500", url)).call();
         let response = ResponseData::from_result(result, 0);
 
-        assert_eq!(
-            response.status_text,
-            Some("Internal Server Error".to_string())
-        );
         assert_eq!(response.status, Some(500));
+        assert_eq!(response.body, Some(json!({ "error": "error 500" })));
+    }
+
+    #[test]
+    fn test_custom_status_code() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/453")
+            .with_status(453)
+            .with_body(r#"{"error": "error 453"}"#)
+            .create();
+
+        let result = ureq::request("GET", &format!("{}/453", url)).call();
+        let response = ResponseData::from_result(result, 0);
+
+        assert_eq!(response.status, Some(453));
+        assert_eq!(response.body, Some(json!({ "error": "error 453" })));
     }
 
     #[test]
