@@ -171,4 +171,11 @@ fn main() {
             exit_with_code(1, None);
         }
     }
+
+    // handle the subcommand `test`
+    if matches.subcommand_matches("init").is_some() {
+        WorkflowConfig::create_example();
+        TerminalUi::print_init();
+        exit_with_code(exitcode::OK, None);
+    }
 }

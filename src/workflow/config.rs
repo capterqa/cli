@@ -3,9 +3,21 @@ use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
-    fs,
+    fs::{create_dir_all, read_to_string, OpenOptions},
+    io::Write,
     path::PathBuf,
 };
+
+const EXAMPLE_WORKFLOW: &str = r#"name: example
+env:
+  URL: https://fake-api.capter.io
+steps:
+  - name: check health
+    url: GET ${{ env.URL }}/api/health
+    assertions:
+      - !expect status to_equal 200
+      - !expect body.ok to_equal true
+"#;
 
 /// A `WorkflowConfig` is the struct we convert the yaml files into.
 ///
@@ -71,7 +83,7 @@ impl WorkflowConfig {
             _ => exit_with_code(exitcode::CONFIG, Some(&format!("Invalid path"))),
         };
 
-        let yaml = match fs::read_to_string(&path) {
+        let yaml = match read_to_string(&path) {
             Ok(val) => val,
             _ => exit_with_code(exitcode::CONFIG, Some(&format!("Failed to read {}", path))),
         };
@@ -100,6 +112,24 @@ impl WorkflowConfig {
         let yaml = str::replace(&yaml, "!!expect", "!expect_not");
 
         serde_yaml::from_str(&yaml)
+    }
+
+    pub fn create_example() {
+        // make sure we have a folder
+        create_dir_all(".capter").unwrap();
+
+        // create the file
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(".capter/example.test.yml")
+            .unwrap();
+
+        // empty file
+        file.set_len(0).unwrap();
+
+        // add example code
+        write!(file, "{}", EXAMPLE_WORKFLOW).unwrap();
     }
 }
 
