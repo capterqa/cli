@@ -64,6 +64,9 @@ jobs:
           - os: macos-latest
             target: x86_64-apple-darwin
 
+          - os: macos-11.0
+            target: arm64-apple-darwin
+
     steps:
       - uses: actions/checkout@v2
 
