@@ -2,6 +2,8 @@ name: capter
 author: capter.io <capter.io>
 about: Test your APIs.
 subcommands:
+  - init:
+      about: creates an example workflow
   - test:
       about: run tests
       args:

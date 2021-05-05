@@ -90,4 +90,29 @@ impl TerminalUi {
     fn format_attr(key: &str, val: &Value) -> String {
         format!("  {}: {}\n", &key, &val.clone())
     }
+
+    pub fn print_init() {
+        execute!(
+            stdout(),
+            SetAttribute(Attribute::Bold),
+            Print("\nWelcome to Capter!\n"),
+            SetAttribute(Attribute::Reset),
+            Print("\nWe've created a workflow in "),
+            SetAttribute(Attribute::Underlined),
+            Print(".capter/example.test.yml"),
+            SetAttribute(Attribute::Reset),
+            Print("\n"),
+            Print("Run it by calling: "),
+            SetAttribute(Attribute::Bold),
+            Print("capter test --token [TOKEN]"),
+            SetAttribute(Attribute::Reset),
+            Print("\n\n"),
+            Print("For more information, go to https://docs.capter.io or call: "),
+            SetAttribute(Attribute::Bold),
+            Print("capter test --help"),
+            Print("\n"),
+            SetAttribute(Attribute::Reset),
+        )
+        .unwrap();
+    }
 }
