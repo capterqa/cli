@@ -30,12 +30,12 @@ const supportedPlatforms = [
     RUST_TARGET: 'x86_64-apple-darwin',
     BINARY_NAME: name,
   },
-  {
-    TYPE: 'Darwin',
-    ARCHITECTURE: 'arm64',
-    RUST_TARGET: 'arm64-apple-darwin',
-    BINARY_NAME: name,
-  },
+  // {
+  //   TYPE: 'Darwin',
+  //   ARCHITECTURE: 'arm64',
+  //   RUST_TARGET: 'arm64-apple-darwin',
+  //   BINARY_NAME: name,
+  // },
 ];
 
 const getPlatformMetadata = () => {
