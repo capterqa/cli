@@ -186,29 +186,29 @@ mod tests {
                 assertions:
                   - !expect status to_equal 200
                   - !expect body.hello to_equal world
+              - name: step 3 (skip)
+                skip: true
+                url: {url}/test/{path}
+                assertions:
+                  - !expect status to_equal 200
             ",
             url = url,
             path = "${{ test.response.body.0.id }}"
         };
         let workflow_config = WorkflowConfig::from_yaml(yaml.into());
 
-        match workflow_config {
-            Ok(workflow_config) => {
-                let result =
-                    WorkflowResult::from_config(&CliOptions::default(), &workflow_config, |_| {});
-                let result = result.unwrap();
-                let response1 = result.requests[0].response.to_owned().unwrap();
-                let response2 = result.requests[1].response.to_owned().unwrap();
+        let result =
+            WorkflowResult::from_config(&CliOptions::default(), &workflow_config.unwrap(), |_| {});
+        let result = result.unwrap();
+        let response1 = result.requests[0].response.to_owned().unwrap();
+        let response2 = result.requests[1].response.to_owned().unwrap();
 
-                assert_eq!(result.requests.len(), 2);
-                assert_eq!(response1.assertion_results[0].passed, true);
-                assert_eq!(
-                    response1.assertion_results[2].message,
-                    Some("expected null to equal 5".to_string())
-                );
-                assert_eq!(response2.assertion_results[0].message, None);
-            }
-            _ => assert!(false),
-        }
+        assert_eq!(result.requests.len(), 2);
+        assert_eq!(response1.assertion_results[0].passed, true);
+        assert_eq!(
+            response1.assertion_results[2].message,
+            Some("expected null to equal 5".to_string())
+        );
+        assert_eq!(response2.assertion_results[0].message, None);
     }
 }

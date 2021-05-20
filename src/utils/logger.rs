@@ -73,3 +73,47 @@ impl Logger {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{workflow::WorkflowConfig, CliOptions};
+    use indoc::formatdoc;
+    use mockito::mock;
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    #[test]
+    fn test_logger() {
+        let url = &mockito::server_url();
+        let _m = mock("GET", "/test").with_status(500).create();
+
+        let yaml = formatdoc! {"
+            ---
+            name: test
+            file: ./capter/logger-test.yml
+            steps:
+              - name: step 1
+                id: test
+                url: {url}/test
+                assertions:
+                  - !expect status to_equal 200
+            ",
+            url = url,
+        };
+        let workflow_config = WorkflowConfig::from_yaml(yaml.into());
+
+        let result =
+            WorkflowResult::from_config(&CliOptions::default(), &workflow_config.unwrap(), |_| {})
+                .unwrap();
+        let mut logger = Logger::new();
+        logger.log_workflow_results(&vec![result]);
+
+        let mut file = File::open(".capter/logs/logger-test.yml.log").unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        assert_eq!(contents.contains("test [./capter/logger-test.yml]"), true);
+
+        fs::remove_file(".capter/logs/logger-test.yml.log").unwrap();
+    }
+}

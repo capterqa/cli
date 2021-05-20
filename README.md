@@ -53,7 +53,7 @@ URL=http://localhost:3000 capter test
 Follow the instructions in the documentation to get started:
 
 - [Installation](https://docs.capter.io/cli/guide/installation)
-- [Gettings started](https://docs.capter.io/cli/guide/getting-started)
+- [Getting started](https://docs.capter.io/cli/guide/getting-started)
 
 ## API
 

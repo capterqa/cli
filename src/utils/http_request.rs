@@ -114,15 +114,8 @@ mod tests {
         let mut request = HttpRequest::new(format!("{}/test", url), "GET".into(), 30);
         let response = request.call();
 
-        match response {
-            Ok(response) => {
-                let value: serde_json::Value = response.into_json().unwrap();
-                assert_eq!(value, json!({ "hello": "world"}));
-            }
-            _ => {
-                assert!(false);
-            }
-        }
+        let value: serde_json::Value = response.unwrap().into_json().unwrap();
+        assert_eq!(value, json!({ "hello": "world"}));
     }
 
     #[test]
@@ -154,15 +147,7 @@ mod tests {
 
         let response = request.call();
 
-        match response {
-            Ok(response) => {
-                assert_eq!(response.status(), 200);
-            }
-            Err(err) => {
-                println!("{}", err);
-                assert!(false);
-            }
-        }
+        assert_eq!(response.unwrap().status(), 200);
     }
 
     #[test]
@@ -185,14 +170,6 @@ mod tests {
 
         let response = request.call();
 
-        match response {
-            Ok(response) => {
-                assert_eq!(response.status(), 200);
-            }
-            Err(err) => {
-                println!("{}", err);
-                assert!(false);
-            }
-        }
+        assert_eq!(response.unwrap().status(), 200);
     }
 }

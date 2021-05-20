@@ -57,4 +57,11 @@ mod tests {
         assert_eq!(output["users"][0]["secret"], "****");
         assert_eq!(output["users"][0]["name"], "Test");
     }
+
+    #[test]
+    fn test_non_object() {
+        let data = json!("test");
+        let output = deep_replace(&data, &vec![]);
+        assert_eq!(output, "test");
+    }
 }
