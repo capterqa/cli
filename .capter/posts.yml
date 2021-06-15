@@ -35,12 +35,6 @@ steps:
     url: GET ${{ env.URL }}/api/posts
     query:
       authorId: ${{ post.response.body.authorId }}
-    body:
-      id: ${{ mask post.response.body.title }}
-      nested:
-        what:
-          - ${{ post.response.body.authorId }}
-          - ${{ mask post.response.body.authorId }}
     assertions:
       - !expect status to_equal 200
       - !expect body.0.authorId to_equal ${{ mask post.response.body.id }}
