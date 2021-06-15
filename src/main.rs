@@ -8,6 +8,7 @@ mod workflow;
 use clap::{crate_version, load_yaml, App, AppSettings};
 use dotenv::dotenv;
 use globwalk;
+use serde::Deserialize;
 use serde_json::json;
 use ui::TerminalUi;
 use ureq;
@@ -17,6 +18,11 @@ use workflow::{workflow_result::WorkflowResult, RunSource, WorkflowConfig};
 pub struct CliOptions {
     is_debug: bool,
     timeout: u64,
+}
+
+#[derive(Deserialize)]
+pub struct WebhookResponse {
+    url: String,
 }
 
 impl Default for CliOptions {
@@ -137,7 +143,7 @@ fn main() {
                 return;
             }
 
-            terminal_ui.webhook_start(webhook);
+            terminal_ui.webhook_start();
 
             let mut request = ureq::request("POST", webhook);
 
@@ -152,8 +158,13 @@ fn main() {
             }));
 
             match response {
-                Ok(_) => {
-                    terminal_ui.webhook_done();
+                Ok(res) => {
+                    // we have a response
+                    // check for url in response
+                    let webhook_response: Option<WebhookResponse> = res.into_json().unwrap_or(None);
+
+                    // render the url so the user can go straight to the run
+                    terminal_ui.webhook_done(webhook_response);
                 }
                 Err(ureq::Error::Status(_, res)) => {
                     let error = res.into_string().unwrap();

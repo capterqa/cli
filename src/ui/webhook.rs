@@ -1,4 +1,4 @@
-use crate::ui::TerminalUi;
+use crate::{ui::TerminalUi, WebhookResponse};
 use crossterm::{
     execute,
     style::{Attribute, Color, Print, SetAttribute, SetForegroundColor},
@@ -18,18 +18,18 @@ impl TerminalUi {
         .unwrap();
     }
 
-    pub fn webhook_start(&self, url: &str) {
+    pub fn webhook_start(&self) {
         execute!(
             stdout(),
             SetAttribute(Attribute::Dim),
             Print("\n---\n\n"),
-            Print(format!("Posting to webhook [{}]... ", url)),
+            Print("Posting result... "),
             SetAttribute(Attribute::Reset),
         )
         .unwrap();
     }
 
-    pub fn webhook_done(&self) {
+    pub fn webhook_done(&self, webhook_response: Option<WebhookResponse>) {
         execute!(
             stdout(),
             SetForegroundColor(Color::Green),
@@ -43,6 +43,20 @@ impl TerminalUi {
             SetAttribute(Attribute::Reset),
         )
         .unwrap();
+
+        if let Some(webhook_response) = webhook_response {
+            let url = webhook_response.url;
+            execute!(
+                stdout(),
+                SetAttribute(Attribute::Dim),
+                Print("\n---\n\n"),
+                Print("Inspect run: "),
+                Print(url),
+                Print("\n"),
+                SetAttribute(Attribute::Reset),
+            )
+            .unwrap();
+        }
     }
     pub fn webhook_error(&self, error: &str) {
         execute!(
