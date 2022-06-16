@@ -8,5 +8,5 @@ pub fn exit_with_code(code: ExitCode, message: Option<&str>) -> ! {
     #[cfg(not(test))]
     std::process::exit(code);
     #[cfg(test)]
-    panic!(code);
+    panic!("{}", code);
 }

@@ -35,7 +35,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: test --token ${{ secrets.CAPTER_TOKEN }} --debug
+          args: test --debug
 
       - name: run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1

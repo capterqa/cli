@@ -11,7 +11,7 @@ steps:
       - !expect status to_equal 200
       - !!expect status to_equal 500
       - !expect headers.content-type to_contain application/json
-      - !expect duration to_be_below 1000
+      - !expect duration to_be_below 10000
       - !expect duration to_be_above ${{ env.DURATION }}
       - !expect body to_be_array
       - !expect body to_have_length 50

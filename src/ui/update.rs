@@ -34,8 +34,8 @@ impl TerminalUi {
 
                 if self.is_tty {
                     execute!(stdout(), cursor::SavePosition).unwrap();
-                    &self.print_step(config, &step, StepStatus::Running);
-                    &self.print_summary();
+                    self.print_step(config, &step, StepStatus::Running);
+                    self.print_summary();
                 }
             }
             CallbackEvent::StepDone(config, index, assertion_results, passed) => {
@@ -46,10 +46,10 @@ impl TerminalUi {
                     execute!(stdout(), terminal::Clear(ClearType::FromCursorDown)).unwrap();
                 }
 
-                &self.print_step(config, &step, StepStatus::Done(passed));
+                self.print_step(config, &step, StepStatus::Done(passed));
 
                 if !passed {
-                    &self.print_assertions(assertion_results);
+                    self.print_assertions(assertion_results);
                     execute!(stdout(), Print("\n")).unwrap();
                     if config.steps.len() - 1 > index as usize {
                         execute!(stdout(), Print("\n")).unwrap();
@@ -77,7 +77,7 @@ impl TerminalUi {
                     .unwrap();
                 }
 
-                &self.print_step(config, &step, StepStatus::Skipped);
+                self.print_step(config, &step, StepStatus::Skipped);
             }
         }
     }
