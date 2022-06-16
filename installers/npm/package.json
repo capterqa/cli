@@ -5,6 +5,7 @@
   "main": "index.js",
   "author": "capter.io <filip@capter.io>",
   "license": "MIT",
+  "homepage": "https://github.com/capterqa/cli",
   "bin": {
     "capter": "run.js"
   },
@@ -20,9 +21,8 @@
   "repository": {
     "url": "https://github.com/capterqa/cli"
   },
-  "homepage": "https://github.com/capterqa/cli",
   "dependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.27.2",
     "console.table": "^0.10.0",
     "rimraf": "^3.0.2"
   }
